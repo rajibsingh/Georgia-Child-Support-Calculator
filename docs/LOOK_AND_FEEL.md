@@ -1,8 +1,8 @@
-# Look And Feel
+# Intown Mediation Look And Feel
 
 ## Design Goal
 
-The Georgia Child Support Calculator should feel like a polished companion to Andrea Knight | Intown Mediation: calm, professional, and authoritative without feeling legalistic or intimidating. The app is for parents making sense of financial information during a stressful family-law process, so the design should prioritize clarity, trust, and easy reading over decoration.
+The child support calculator should be branded for Intown Mediation and feel like a polished companion to Andrea Knight | Intown Mediation: calm, professional, and authoritative without feeling legalistic or intimidating. The app is for parents making sense of financial information during a stressful family-law process, so the design should prioritize clarity, trust, and easy reading over decoration.
 
 The app should not look like a generic government form or a consumer finance dashboard. It should feel like a mediation practice tool: steady, restrained, human, and precise.
 
@@ -67,15 +67,15 @@ The website uses:
 
 For iOS:
 
-- Use the system font for most interactive UI unless we intentionally bundle brand fonts.
-- Prefer `Noto Sans` if custom font bundling is approved later.
-- Use `Cardo` only for a small brand lockup or app title treatment, not for calculator fields or dense results.
+- Use native iOS system fonts for the UI.
+- Do not bundle `Cardo` or `Noto Sans` for the first release.
+- Echo the website's typography through light headings, spacing, and color rather than custom font files.
 
 Recommended SwiftUI text scale:
 
 | Role | Size | Weight | Notes |
 | --- | ---: | --- | --- |
-| App title / brand lockup | 28-34 | Light or Regular | Use sparingly; can echo Cardo if bundled. |
+| App title / brand lockup | 28-34 | Light or Regular | Use native iOS font; brand through wording and color. |
 | Screen title | 24-28 | Regular | Teal, calm, not oversized. |
 | Section title | 18-21 | Semibold | For form groups and result categories. |
 | Body | 16-17 | Regular | Default readable copy. |
@@ -111,9 +111,9 @@ Avoid large marketing-style hero sections. The first screen should begin the cal
 
 ### Header
 
-Use a compact app header:
+Use a compact Intown Mediation-branded app header:
 
-- Brand line: `Intown Mediation` or `Georgia Child Support Calculator`.
+- Brand line: `Intown Mediation`.
 - Optional small subtitle: `Guideline estimate for Georgia parents`.
 - Teal accent rule or small brand mark.
 
@@ -205,6 +205,15 @@ Use help text like:
 - `This adjustment applies only when parenting time is court ordered.`
 - `This estimate is not legal advice or a court order.`
 
+## Progressive Disclosure
+
+The app should include all 2026 calculation adjustments without making the main path feel dense. Keep the standard case flow simple and reveal advanced controls only when needed:
+
+- Use collapsed sections for deviations, credits, other qualified children, and nonstandard healthcare allocations.
+- Prefer short "Add..." actions over always-visible empty fields.
+- Show a compact summary when an optional adjustment has been added.
+- Keep advanced legal explanations in help text or info sheets, not in the main form body.
+
 ## Accessibility
 
 Design for parents reading financial and legal information under pressure:
@@ -236,8 +245,8 @@ Keep these components boring in the best sense: predictable, readable, and easy 
 Do:
 
 - Use teal as the primary action and confidence color.
-- Use Noto Sans or the system font for readable forms.
-- Use Cardo only for subtle brand moments.
+- Use native iOS system fonts for readable forms.
+- Use Intown Mediation wording, teal, and spacing for brand continuity rather than custom fonts.
 - Keep forms clean, linear, and calm.
 - Make final results easy to audit.
 - Use square or lightly rounded controls.

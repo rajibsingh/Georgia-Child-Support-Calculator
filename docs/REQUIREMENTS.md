@@ -1,14 +1,14 @@
-# Georgia Child Support Calculator Requirements
+# Intown Mediation Child Support Calculator Requirements
 
 ## Purpose
 
-Build an iOS app that helps Georgia parents estimate guideline child support under O.C.G.A. § 19-6-15, current through the 2025 Regular Session and reflected in `docs/O.C.G.A.-_-19-6-15_01.01.2026.pdf`. The app should make the calculation understandable, repeatable, and easy to sanity check, while clearly communicating that only a court can enter a binding support order.
+Build an Intown Mediation-branded iOS app that helps Georgia parents estimate guideline child support under O.C.G.A. § 19-6-15, current through the 2025 Regular Session and reflected in `docs/O.C.G.A.-_-19-6-15_01.01.2026.pdf`. The app should make the calculation understandable, repeatable, and easy to sanity check, while clearly communicating that only a court can enter a binding support order.
 
 The simplified flow in `docs/CALCULATION.md` is the onboarding model for users. The statute is the controlling source when the simplified guide omits detail or conflicts with the statute.
 
 ## Product Scope
 
-The first production version shall support a standard two-parent Georgia child support estimate for one to six children, including:
+The first production version shall support a standard two-parent Georgia child support estimate for one to six children, including all 2026 guideline adjustments:
 
 - Monthly gross income collection for both parents.
 - Adjusted income deductions for applicable self-employment taxes, preexisting current child support orders actually paid, and optional theoretical child support orders for other qualified children.
@@ -22,6 +22,8 @@ The first production version shall support a standard two-parent Georgia child s
 - Allocation percentages for future uninsured healthcare expenses.
 
 The app shall not generate legal filings, replace the official Georgia calculator, or present estimates as legal advice.
+
+The app shall be branded primarily for Intown Mediation. "Georgia child support calculator" may appear as a descriptive product category or subtitle, but the trusted source and visual identity should be Intown Mediation.
 
 ## Calculation Requirements
 
@@ -45,6 +47,8 @@ The app shall collect the following parent-level inputs:
 - Optional deviation amounts and reason categories.
 - Social Security Title II child benefit received on the noncustodial parent's account.
 - VA disability child benefit received on the noncustodial parent's account.
+
+The UI shall progressively disclose advanced inputs. Core income, child count, custody, and parenting time fields should be visible in the main flow. Less common adjustments, deviations, and credits should be collapsed, minimized, or presented as optional sections so the calculator remains simple for standard cases.
 
 ### Income
 
@@ -165,7 +169,7 @@ The results view shall show:
 - Future uninsured healthcare allocation.
 - A clear disclaimer that the result is an estimate, not legal advice or a court order.
 
-The app shall support saving local scenarios for comparison, but cloud sync, account creation, and document generation are out of scope for the first release unless added later.
+The app shall not support saved scenarios in the first release. Saved local scenarios and scenario comparison should be tracked as future work. Cloud sync, account creation, and document generation are also out of scope for the first release unless added later.
 
 ## Data Requirements
 
@@ -184,6 +188,8 @@ Each data file shall include:
 
 The app shall avoid floating-point money calculations for final dollar amounts. Use `Decimal` or integer cents in the domain model.
 
+The full 2026 support tables shall be encoded from `docs/O.C.G.A.-_-19-6-15_01.01.2026.pdf` into the format that best supports deterministic lookup and review, likely JSON or generated Swift data. The conversion process shall be documented and reproducible enough that future table updates can be audited.
+
 ## Testing Requirements
 
 The codebase already contains Xcode unit and UI test targets. Development shall keep both targets active and make them meaningful before calculation work expands.
@@ -195,6 +201,8 @@ Unit tests shall cover:
 - Preexisting order adjustment caps.
 - Theoretical child support order calculation.
 - Basic obligation lookup, including exact rows, between-row nearest matching, below-minimum, and above-maximum behavior.
+- Converted Basic Child Support Obligation Table data checked against values extracted from the statutory PDF.
+- Converted Low-Income Adjustment Table data checked against values extracted from the statutory PDF.
 - Pro rata share calculations and rounding behavior.
 - Parenting time adjustment formula.
 - Additional expense allocation.
@@ -216,13 +224,15 @@ Snapshot or screenshot regression tests should be added once the main calculator
 
 Every calculation behavior that maps to a statutory table or formula shall have at least one regression test before it is exposed in the UI.
 
+Table conversion tests shall compare representative and boundary rows from the app's encoded data against the PDF-derived source values. These tests should include the first row, last row, several middle rows, all child-count columns, and low-income table boundaries.
+
 ## Nonfunctional Requirements
 
 The app shall run fully on device with no network requirement for calculations.
 
 The app shall be privacy-first: user-entered family and income data shall stay local unless the user explicitly exports it in a future feature.
 
-The app shall use accessible SwiftUI controls, Dynamic Type, VoiceOver labels, and clear currency formatting.
+The app shall use native iOS fonts, accessible SwiftUI controls, Dynamic Type, VoiceOver labels, and clear currency formatting.
 
 The app shall format currency and percentages consistently using U.S. locale conventions.
 
@@ -234,4 +244,4 @@ The calculation engine shall be deterministic: the same inputs, table version, a
 - Whether to support nonparent custodian scenarios in the first release or reserve them for a second phase.
 - Whether split parenting should be implemented in the first release or documented as a manual/court worksheet scenario.
 - Which official Georgia calculator outputs should become golden fixtures for cross-checking.
-- Whether low-income table values should be entered manually from the PDF or imported from an official machine-readable source if available.
+- Whether future saved scenarios should be local-only or include export/share workflows.

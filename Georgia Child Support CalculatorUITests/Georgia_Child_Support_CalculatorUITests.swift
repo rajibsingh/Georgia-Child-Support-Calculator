@@ -23,14 +23,13 @@ final class Georgia_Child_Support_CalculatorUITests: XCTestCase {
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testLaunchShowsDefaultEstimate() throws {
         let app = XCUIApplication()
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // XCUIAutomation Documentation
-        // https://developer.apple.com/documentation/xcuiautomation
+        XCTAssertTrue(app.staticTexts["Child Support Calculator"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["finalPayment"].waitForExistence(timeout: 5))
+        XCTAssertEqual(app.staticTexts["finalPayment"].label, "$1,119")
     }
 
     @MainActor

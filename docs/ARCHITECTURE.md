@@ -1,8 +1,8 @@
-# Georgia Child Support Calculator Architecture
+# Intown Mediation Child Support Calculator Architecture
 
 ## Overview
 
-This app should be built as a SwiftUI iOS application with a pure Swift calculation core. The UI collects worksheet-style inputs, the domain layer performs deterministic Georgia guideline calculations, and the results layer explains each step used to produce the final estimate.
+This app should be built as an Intown Mediation-branded SwiftUI iOS application with a pure Swift calculation core. The UI collects worksheet-style inputs, the domain layer performs deterministic Georgia guideline calculations, and the results layer explains each step used to produce the final estimate.
 
 The project currently includes:
 
@@ -83,7 +83,7 @@ Calculation code shall not depend on SwiftUI, SwiftData, UIKit, or device state.
 
 The UI shall not duplicate business logic. It should bind user inputs into `CalculationInput`, call the calculator, and render `CalculationResult`.
 
-Statutory tables shall be data, not hard-coded branching logic. Table parsing/loading can be isolated behind protocols so tests can inject small fixture tables.
+Statutory tables shall be data, not hard-coded branching logic. Table parsing/loading can be isolated behind protocols so tests can inject small fixture tables. The production table data shall be converted from the statutory PDF and covered by tests that compare encoded values against PDF-derived reference fixtures.
 
 Money shall be represented by integer cents or `Decimal`. Avoid `Double` for final money values. `Double` may be used only inside the parenting time exponent formula, then converted back through an explicit rounding policy.
 
@@ -182,11 +182,19 @@ protocol LowIncomeTableProviding {
 
 For income between rows, use the nearest bracket required by O.C.G.A. § 19-6-15(b)(4), not the simplified guide's round-down shortcut.
 
+Table conversion should be treated as its own implementation slice:
+
+- Extract source values from `docs/O.C.G.A.-_-19-6-15_01.01.2026.pdf`.
+- Normalize money values to integer cents or whole-dollar `Money` values.
+- Encode production lookup data as JSON or generated Swift, whichever is easiest to audit and safest to load in the app target.
+- Store a small PDF-derived verification fixture separately from production data.
+- Test production data against the verification fixture, including first and last rows, middle rows, all child-count columns, nearest-row behavior, and low-income table boundaries.
+
 ## Persistence
 
-Use local persistence only. SwiftData is acceptable for saved scenarios once the domain model is stable, but the first calculation milestone does not require persistence.
+The first release shall not include saved scenarios. Keep the calculation state in memory during the active session.
 
-Persisted scenario records should store user-entered inputs and table version, not only final outputs. This allows saved scenarios to be recalculated when rules or tables change while still showing which version produced the original result.
+Future saved scenarios can use SwiftData once the domain model is stable. Persisted scenario records should store user-entered inputs and table version, not only final outputs. This allows saved scenarios to be recalculated when rules or tables change while still showing which version produced the original result.
 
 Do not store sensitive data in analytics or remote services.
 
@@ -202,6 +210,8 @@ The UI should be a focused calculator workflow:
 All UI controls used by UI tests shall have stable accessibility identifiers.
 
 The result should update live when inputs are valid. Invalid or incomplete inputs should show actionable inline validation and keep the previous valid result out of the primary result area to avoid stale estimates.
+
+Advanced 2026 adjustments should be available without making the common path feel busy. Use collapsed optional sections, disclosure groups, or "Add adjustment" flows for low-frequency inputs such as deviations, Social Security/VA credits, theoretical child support orders, and nonstandard healthcare allocations.
 
 ## Error Handling
 
@@ -226,13 +236,14 @@ Calculation tests should use fixture inputs and assert intermediate values, not 
 
 Golden fixtures should include:
 
-- Sharon and Henry from `docs/CALCULATION.md`: custodial adjusted income $5,000, noncustodial adjusted income $6,000, combined income $11,000, pro rata shares 45.45 percent and 54.55 percent, two-child basic obligation $1,877, and noncustodial basic obligation about $1,024 before 2026 parenting time and additional adjustments.
+- Sharon and Henry from `docs/CALCULATION.md`, reconciled to the controlling 2026 statutory PDF table: custodial adjusted income $5,000, noncustodial adjusted income $6,000, combined income $11,000, pro rata shares 45.45 percent and 54.55 percent, two-child basic obligation $2,052, and noncustodial basic obligation about $1,119 before 2026 parenting time and additional adjustments. The simplified guide's older $1,877 example is treated as superseded by the 2026 PDF.
 - Exact statutory table row lookup.
 - Between-row nearest statutory table lookup.
 - Above $40,000 high-income cap behavior.
 - Low-income table cap behavior.
 - Parenting time adjustment with unequal court ordered days.
 - Social Security and VA credit scenarios where the credit partially offsets and fully satisfies the payment.
+- Production table verification fixtures extracted from the statutory PDF for both the Basic Child Support Obligation Table and the Low-Income Adjustment Table.
 
 UI tests should complete at least one valid happy path scenario and one validation path. Once visual design stabilizes, add screenshot regression coverage for the main input and result states.
 
@@ -252,12 +263,13 @@ The exact simulator name may vary by installed Xcode runtime. CI should use an e
 - Add `Money`, parent roles, calculation input/result types, and typed errors.
 - Add basic unit test files and fixture helpers.
 - Add versioned table-loading interfaces with small test tables.
+- Add the statutory table conversion workflow and PDF-derived verification fixtures.
 
 ### Phase 2: Core Formula
 
 - Implement gross income, adjusted income, combined income, pro rata shares, and basic obligation lookup.
 - Add the Sharon/Henry golden test and table lookup tests.
-- Enter or import the full 2026 Basic Child Support Obligation Table.
+- Enter or import the full 2026 Basic Child Support Obligation Table and verify converted values against the PDF-derived fixture.
 
 ### Phase 3: 2026 Adjustments
 
@@ -282,8 +294,8 @@ The exact simulator name may vary by installed Xcode runtime. CI should use an e
 
 ### Phase 6: Persistence and Polish
 
-- Add local saved scenarios.
-- Add comparison view for multiple scenarios.
+- Consider local saved scenarios.
+- Consider comparison view for multiple scenarios.
 - Add exportable summary if needed.
 - Add screenshot regression tests after layouts settle.
 
