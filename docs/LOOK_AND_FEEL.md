@@ -152,6 +152,15 @@ Use a quiet stepper/progress pattern:
 
 Do not make progress indicators visually louder than the form itself.
 
+### Child Count Selector
+
+Use a compact segmented selector for the number of children:
+
+- Show all values from `1` through `6` at once.
+- Use Intown teal fill with white text for the selected value.
+- Use teal text, white background, and thin gray dividers for unselected values.
+- Keep the control at least 44 pt tall and avoid wheel pickers inside constrained cards.
+
 ### Result Summary
 
 The result screen should be the most polished view:
@@ -193,8 +202,11 @@ The writing should mirror the website's direct, plain-spoken tone:
 
 Use labels like:
 
+- `Custodial parent name`
+- `Noncustodial parent name`
+- `Children`
 - `Monthly gross income`
-- `Court ordered parenting time`
+- `Schedule type`
 - `Child health insurance premium`
 - `Work related child care`
 - `Estimated monthly payment`
@@ -202,8 +214,16 @@ Use labels like:
 Use help text like:
 
 - `Use the amount paid for the child, not the full family premium if you know the child-specific amount.`
-- `This adjustment applies only when parenting time is court ordered.`
+- `Schedule day counts are approximate two-year averages from the Georgia Parenting Plan: Day Counts guide.`
+- `Variable or unusual work schedules, including airline flight schedules, may need a custom court-ordered count or deviation analysis.`
+- `Preexisting child support actually paid may affect the official worksheet. See O.C.G.A. § 19-6-15.`
 - `This estimate is not legal advice or a court order.`
+
+Use commands like:
+
+- `Reset`
+
+The reset action should live in the navigation bar and use the SF Symbol `arrow.counterclockwise`.
 
 ## Progressive Disclosure
 

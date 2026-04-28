@@ -99,7 +99,7 @@ struct ChildSupportCalculator {
     private func adjustedIncome(for parent: ParentInput, children: Int) -> Money {
         let selfEmploymentDeduction = parent.selfEmploymentMonthlyIncome * Decimal(string: "0.0765")!
         let theoretical = theoreticalSupportCredit(for: parent, children: children)
-        let adjusted = parent.grossMonthlyIncome - selfEmploymentDeduction - parent.preexistingOrdersActuallyPaid - theoretical
+        let adjusted = parent.grossMonthlyIncome - selfEmploymentDeduction - theoretical
         return max(adjusted, .zero)
     }
 

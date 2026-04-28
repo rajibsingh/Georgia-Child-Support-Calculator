@@ -30,6 +30,10 @@ final class Georgia_Child_Support_CalculatorUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Child Support Calculator"].waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["finalPayment"].waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["finalPayment"].label, "$1,119")
+        XCTAssertTrue(app.otherElements["childrenSpinner"].exists)
+        XCTAssertTrue(app.buttons["2 children"].exists)
+        XCTAssertTrue(app.buttons["parentingSchedulePicker"].exists)
+        XCTAssertTrue(app.buttons["resetButton"].exists)
     }
 
     @MainActor

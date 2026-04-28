@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import Georgia_Child_Support_Calculator
 
+@MainActor
 struct GeorgiaChildSupportCalculatorTests {
     @Test func looksUpPdfConvertedBasicObligationRows() throws {
         let table = BasicObligationTable()
@@ -47,7 +48,6 @@ struct GeorgiaChildSupportCalculatorTests {
                 custodialParent: ParentInput(
                     grossMonthlyIncome: Money(dollars: 5_000),
                     selfEmploymentMonthlyIncome: .zero,
-                    preexistingOrdersActuallyPaid: .zero,
                     qualifiedChildren: 0,
                     workRelatedChildCare: .zero,
                     childHealthInsurancePremium: .zero
@@ -55,7 +55,6 @@ struct GeorgiaChildSupportCalculatorTests {
                 noncustodialParent: ParentInput(
                     grossMonthlyIncome: Money(dollars: 6_000),
                     selfEmploymentMonthlyIncome: .zero,
-                    preexistingOrdersActuallyPaid: .zero,
                     qualifiedChildren: 0,
                     workRelatedChildCare: .zero,
                     childHealthInsurancePremium: .zero
@@ -112,6 +111,35 @@ struct GeorgiaChildSupportCalculatorTests {
         #expect(result.finalMonthlyPayment < result.basicObligationShares.noncustodial)
     }
 
+    @Test func parentingSchedulePresetsMapToGeorgiaDayCountExamples() {
+        #expect(ParentingScheduleOption.none.noncustodialDays == nil)
+        #expect(ParentingScheduleOption.variable.noncustodialDays == nil)
+        #expect(ParentingScheduleOption.equalSplit.noncustodialDays == Decimal(string: "182.5")!)
+        #expect(ParentingScheduleOption.everyOtherThursdayToMondayPlusThursday.noncustodialDays == Decimal(148))
+        #expect(ParentingScheduleOption.everyOtherFridayToMondayPlusWednesday.noncustodialDays == Decimal(121))
+        #expect(ParentingScheduleOption.everyOtherFridayToMonday.noncustodialDays == Decimal(102))
+        #expect(ParentingScheduleOption.everyOtherThursdayToSundayPlusThursday.noncustodialDays == Decimal(string: "123.5")!)
+        #expect(ParentingScheduleOption.everyOtherThursdayToSundayPlusThursdayEqualSummer.noncustodialDays == Decimal(string: "129.5")!)
+    }
+
+    @Test func calculatorDraftUsesNamesAndScheduleSelection() {
+        var draft = CalculatorDraft()
+        #expect(draft.custodialDisplayName == "Mom")
+        #expect(draft.noncustodialDisplayName == "Dad")
+        #expect(draft.displayName(for: .noncustodial) == "Dad")
+        #expect(draft.input.parentingTime.hasCourtOrderedParentingTime == false)
+
+        draft.custodialParentName = "  Andrea  "
+        draft.noncustodialParentName = "  Jordan  "
+        draft.parentingSchedule = .everyOtherFridayToMonday
+
+        #expect(draft.custodialDisplayName == "Andrea")
+        #expect(draft.noncustodialDisplayName == "Jordan")
+        #expect(draft.input.parentingTime.hasCourtOrderedParentingTime == true)
+        #expect(draft.input.parentingTime.noncustodialDays == Decimal(102))
+        #expect(draft.input.parentingTime.custodialDays == Decimal(263))
+    }
+
     @Test func appliesLowIncomeCapWhenApplicable() throws {
         let result = try ChildSupportCalculator().calculate(
             CalculationInput(
@@ -119,7 +147,6 @@ struct GeorgiaChildSupportCalculatorTests {
                 custodialParent: ParentInput(
                     grossMonthlyIncome: Money(dollars: 1_000),
                     selfEmploymentMonthlyIncome: .zero,
-                    preexistingOrdersActuallyPaid: .zero,
                     qualifiedChildren: 0,
                     workRelatedChildCare: .zero,
                     childHealthInsurancePremium: .zero
@@ -127,7 +154,6 @@ struct GeorgiaChildSupportCalculatorTests {
                 noncustodialParent: ParentInput(
                     grossMonthlyIncome: Money(dollars: 1_500),
                     selfEmploymentMonthlyIncome: .zero,
-                    preexistingOrdersActuallyPaid: .zero,
                     qualifiedChildren: 0,
                     workRelatedChildCare: .zero,
                     childHealthInsurancePremium: .zero
@@ -149,7 +175,6 @@ struct GeorgiaChildSupportCalculatorTests {
             custodialParent: ParentInput(
                 grossMonthlyIncome: Money(dollars: 5_000),
                 selfEmploymentMonthlyIncome: .zero,
-                preexistingOrdersActuallyPaid: .zero,
                 qualifiedChildren: 0,
                 workRelatedChildCare: .zero,
                 childHealthInsurancePremium: .zero
@@ -157,7 +182,6 @@ struct GeorgiaChildSupportCalculatorTests {
             noncustodialParent: ParentInput(
                 grossMonthlyIncome: Money(dollars: 6_000),
                 selfEmploymentMonthlyIncome: .zero,
-                preexistingOrdersActuallyPaid: .zero,
                 qualifiedChildren: 0,
                 workRelatedChildCare: .zero,
                 childHealthInsurancePremium: .zero

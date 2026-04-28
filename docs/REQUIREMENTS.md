@@ -11,7 +11,7 @@ The simplified flow in `docs/CALCULATION.md` is the onboarding model for users. 
 The first production version shall support a standard two-parent Georgia child support estimate for one to six children, including all 2026 guideline adjustments:
 
 - Monthly gross income collection for both parents.
-- Adjusted income deductions for applicable self-employment taxes, preexisting current child support orders actually paid, and optional theoretical child support orders for other qualified children.
+- Adjusted income deductions for applicable self-employment taxes and optional theoretical child support orders for other qualified children. Preexisting current child support orders actually paid shall be noted with a statute reference but not calculated in this simplified app flow.
 - Combined adjusted gross income and each parent's pro rata percentage.
 - Basic child support obligation lookup from the statutory table.
 - 2026 parenting time adjustment using court ordered parenting time.
@@ -32,15 +32,17 @@ The app shall be branded primarily for Intown Mediation. "Georgia child support 
 The app shall collect the following case-level inputs:
 
 - Number of children whose support is being calculated, limited to 1 through 6 for table lookup.
+- Child count shall use a compact visible selector showing values 1 through 6. Avoid clipped wheel pickers or controls that hide the available range.
 - Custody arrangement sufficient to identify the custodial and noncustodial parent under O.C.G.A. § 19-6-15(a)(9) and (a)(14).
-- Court ordered parenting time for each parent, expressed as annual average days. Days may be overnights or recurring daytime hours divided by 24.
-- Whether there is a court order awarding parenting time. The parenting time adjustment applies only when such an order exists.
+- Parent names for labeling the worksheet, with examples such as "Mom," "Dad," or first names. The UI should note that the official Georgia calculator alphabetizes entered parent names for worksheet column headings.
+- Court ordered parenting time selected by schedule type, using the Georgia Parenting Plan day-count guide as the source for approximate two-year average days.
+- Whether the schedule is variable or unusual. Jobs such as airline flight work may require a custom day count, court findings, or deviation analysis outside the simplified schedule selector.
 
 The app shall collect the following parent-level inputs:
 
 - Monthly gross income from all included sources.
 - Self-employment income, when applicable.
-- Preexisting current child support orders and evidence-ready monthly amount actually paid.
+- A notation that preexisting current child support orders actually paid may affect the official worksheet and should be reviewed under O.C.G.A. § 19-6-15. The first release shall not collect an amount or include it in the estimate.
 - Other qualified children living in the parent's home, when the user wants to model a theoretical child support order.
 - Work related child care paid by that parent or a nonparent custodian.
 - Child health insurance premium paid by that parent or a nonparent custodian.
@@ -65,12 +67,11 @@ Self-employment income shall be modeled as gross receipts minus ordinary and rea
 Adjusted monthly gross income shall deduct, when applicable:
 
 - One-half of self-employment and Medicare taxes calculated from self-employment income.
-- Preexisting current child support orders actually paid, capped at the average current support actually paid over the prior 12 months or the life of the order if shorter.
 - Theoretical child support orders for other qualified children, when allowed by the court or modeled by the user.
 
 Theoretical child support orders shall be calculated from the parent's monthly gross income, using only the self-employment tax adjustment, then multiplied by 75 percent before subtracting from that parent's monthly gross income.
 
-When multiple family adjustments exist, preexisting orders shall be applied before theoretical child support order credits.
+Preexisting child support actually paid is intentionally informational in the first release. The UI shall direct users to the statute and official calculator instead of applying a simplified or potentially incomplete adjustment.
 
 ### Basic Child Support Obligation
 
@@ -90,7 +91,7 @@ The app shall handle zero or negative adjusted income defensively by blocking fi
 
 ### Parenting Time Adjustment
 
-When there is a court ordered parenting time arrangement, the app shall calculate the noncustodial parent's parenting time adjusted basic obligation as:
+When there is a selected court ordered parenting time schedule with a known day-count template, the app shall calculate the noncustodial parent's parenting time adjusted basic obligation as:
 
 ```text
 noncustodialDaysPower = noncustodialDays ^ 2.5
@@ -101,7 +102,16 @@ adjustmentDelta = (termA - termB) / (noncustodialDaysPower + custodialDaysPower)
 parentingTimeAdjustedAmount = noncustodialBasicShare + adjustmentDelta
 ```
 
-For multiple children with different court ordered parenting time, the app shall use the average number of court ordered days. For split parenting, future support shall require separate worksheets per custodial parent.
+Schedule options shall include the published Georgia Parenting Plan day-count examples:
+
+- Equal/split parenting time, 182.5 noncustodial days.
+- Every other Thursday-Monday plus Thursday in the off week, week-on/week-off summer, 148 noncustodial days.
+- Every other Friday-Monday plus Wednesday in the off week, three summer weeks each, 121 noncustodial days.
+- Every other Friday-Monday, two summer weeks each, 102 noncustodial days.
+- Every other Thursday-Sunday plus Thursday in the off week, two summer weeks each, 123.5 noncustodial days.
+- Every other Thursday-Sunday plus Thursday in the off week, week-on/week-off summer, 129.5 noncustodial days.
+
+For multiple children with different court ordered parenting time, split parenting, or variable work schedules such as airline flight schedules, the app shall display an informational note and reserve exact custom day-count entry for a future iteration.
 
 If there is no court ordered parenting time, the app shall skip this adjustment and use the noncustodial parent's basic share.
 
@@ -145,7 +155,7 @@ If the noncustodial parent's final obligation is negative after all worksheet sc
 
 The first screen shall be the calculator workflow, not a marketing landing page.
 
-The app shall guide users through a compact, reviewable worksheet flow:
+The app shall guide users through a compact, reviewable worksheet flow. The current implementation uses a single scrollable calculator screen with grouped sections:
 
 - Case setup.
 - Parent income.
@@ -156,6 +166,8 @@ The app shall guide users through a compact, reviewable worksheet flow:
 - Results.
 
 Each step shall show live validation and concise help text for legal terms. Help text shall clarify the data being requested without crowding the workflow.
+
+The screen shall include a reset action that restores the default worksheet values.
 
 The results view shall show:
 
@@ -198,7 +210,7 @@ Unit tests shall cover:
 
 - Gross income inclusion and exclusion helpers.
 - Self-employment tax adjustment.
-- Preexisting order adjustment caps.
+- Preexisting support notation and UI regression coverage showing that the simplified app presents it as informational rather than an active amount field.
 - Theoretical child support order calculation.
 - Basic obligation lookup, including exact rows, between-row nearest matching, below-minimum, and above-maximum behavior.
 - Converted Basic Child Support Obligation Table data checked against values extracted from the statutory PDF.
@@ -219,6 +231,7 @@ UI tests shall cover:
 - Editing an input and verifying the result updates.
 - Validation for invalid income, child count, and missing custody inputs.
 - Accessibility identifiers for all form controls needed by UI automation.
+- Presence of the reset button, child-count selector, parenting schedule selector, and final estimate.
 
 Snapshot or screenshot regression tests should be added once the main calculator UI stabilizes.
 

@@ -13,7 +13,6 @@ struct CalculationInput: Equatable {
 struct ParentInput: Equatable {
     var grossMonthlyIncome: Money
     var selfEmploymentMonthlyIncome: Money
-    var preexistingOrdersActuallyPaid: Money
     var qualifiedChildren: Int
     var workRelatedChildCare: Money
     var childHealthInsurancePremium: Money
@@ -21,7 +20,6 @@ struct ParentInput: Equatable {
     static let empty = ParentInput(
         grossMonthlyIncome: .zero,
         selfEmploymentMonthlyIncome: .zero,
-        preexistingOrdersActuallyPaid: .zero,
         qualifiedChildren: 0,
         workRelatedChildCare: .zero,
         childHealthInsurancePremium: .zero
@@ -53,4 +51,3 @@ struct DeviationInput: Identifiable, Equatable {
     var amount: Money
     var direction: Direction
 }
-
