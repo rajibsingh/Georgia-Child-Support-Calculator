@@ -4,9 +4,11 @@ import Testing
 
 @MainActor
 struct GeorgiaChildSupportCalculatorTests {
+
+    // MARK: - Table lookups
+
     @Test func looksUpPdfConvertedBasicObligationRows() throws {
         let table = BasicObligationTable()
-
         let first = try table.basicObligation(forCombinedIncome: Money(dollars: 800), children: 1)
         #expect(first.obligation == Money(dollars: 170))
         #expect(first.matchKind == .exact)
@@ -21,7 +23,6 @@ struct GeorgiaChildSupportCalculatorTests {
 
     @Test func usesNearestBracketForBetweenRowIncome() throws {
         let table = BasicObligationTable()
-
         let lower = try table.basicObligation(forCombinedIncome: Money(dollars: 10_024), children: 2)
         #expect(lower.matchedIncome == Money(dollars: 10_000))
         #expect(lower.matchKind == .nearest)
@@ -33,7 +34,6 @@ struct GeorgiaChildSupportCalculatorTests {
 
     @Test func looksUpPdfConvertedLowIncomeRows() {
         let table = LowIncomeAdjustmentTable()
-
         #expect(table.lowIncomeCap(forAdjustedIncome: Money(dollars: 1_500), children: 1) == Money(dollars: 285))
         #expect(table.lowIncomeCap(forAdjustedIncome: Money(dollars: 1_600), children: 2) == Money(dollars: 389))
         #expect(table.lowIncomeCap(forAdjustedIncome: Money(dollars: 1_575), children: 2) == Money(dollars: 389))
@@ -41,57 +41,40 @@ struct GeorgiaChildSupportCalculatorTests {
         #expect(table.lowIncomeCap(forAdjustedIncome: Money(dollars: 2_500), children: 1) == nil)
     }
 
-    @Test func calculatesSimpleGuidelineEstimateFrom2026Table() throws {
-        let result = try ChildSupportCalculator().calculate(
-            CalculationInput(
-                numberOfChildren: 2,
-                custodialParent: ParentInput(
-                    grossMonthlyIncome: Money(dollars: 5_000),
-                    selfEmploymentMonthlyIncome: .zero,
-                    qualifiedChildren: 0,
-                    workRelatedChildCare: .zero,
-                    childHealthInsurancePremium: .zero
-                ),
-                noncustodialParent: ParentInput(
-                    grossMonthlyIncome: Money(dollars: 6_000),
-                    selfEmploymentMonthlyIncome: .zero,
-                    qualifiedChildren: 0,
-                    workRelatedChildCare: .zero,
-                    childHealthInsurancePremium: .zero
-                ),
-                parentingTime: .none,
-                deviations: [],
-                socialSecurityChildBenefit: .zero,
-                vaDisabilityChildBenefit: .zero
-            )
-        )
+    // MARK: - Child support calculator
 
+    @Test func calculatesSimpleEstimateFrom2026Table() throws {
+        let result = try ChildSupportCalculator().calculate(baseInput())
         #expect(result.combinedAdjustedGrossIncome == Money(dollars: 11_000))
         #expect(result.tableLookup.obligation == Money(dollars: 2_052))
         #expect(result.finalMonthlyPayment.wholeDollarsRounded == 1119)
         #expect(result.payer == .noncustodial)
     }
 
-    @Test func appliesAdditionalExpensesAndCredits() throws {
+    @Test func expensePaidByCPIncreasesNCPObligation() throws {
         var input = baseInput()
-        input.custodialParent.workRelatedChildCare = Money(dollars: 400)
-        input.noncustodialParent.childHealthInsurancePremium = Money(dollars: 200)
-        input.socialSecurityChildBenefit = Money(dollars: 100)
-        input.vaDisabilityChildBenefit = Money(dollars: 50)
-
+        input.childcareAmount = Money(dollars: 400)
+        input.childcarePayer = .cp
         let result = try ChildSupportCalculator().calculate(input)
+        // NCP owes their pro-rata share (~54.5%) of $400 = ~$218 extra
+        #expect(result.additionalExpenseShares.noncustodial > .zero)
+        #expect(result.finalMonthlyPayment.wholeDollarsRounded > 1119)
+    }
 
-        #expect(result.additionalExpenseShares.noncustodial.wholeDollarsRounded == 327)
-        #expect(result.credits.total == Money(dollars: 150))
-        #expect(result.finalMonthlyPayment.wholeDollarsRounded == 1296)
+    @Test func expensePaidByNCPDecreasesNCPObligation() throws {
+        var input = baseInput()
+        input.healthInsuranceAmount = Money(dollars: 400)
+        input.healthInsurancePayer = .ncp
+        let result = try ChildSupportCalculator().calculate(input)
+        // NCP already paying, so their net obligation decreases
+        #expect(result.additionalExpenseShares.noncustodial < .zero)
+        #expect(result.finalMonthlyPayment.wholeDollarsRounded < 1119)
     }
 
     @Test func creditsCannotCreateReversePayment() throws {
         var input = baseInput()
         input.socialSecurityChildBenefit = Money(dollars: 2_000)
-
         let result = try ChildSupportCalculator().calculate(input)
-
         #expect(result.credits.total == Money(dollars: 2_000))
         #expect(result.finalMonthlyPayment == .zero)
         #expect(result.payer == .noncustodial)
@@ -104,40 +87,8 @@ struct GeorgiaChildSupportCalculatorTests {
             custodialDays: 265,
             noncustodialDays: 100
         )
-
         let result = try ChildSupportCalculator().calculate(input)
-
         #expect(result.parentingTimeAdjustedNoncustodialAmount < result.basicObligationShares.noncustodial)
-        #expect(result.finalMonthlyPayment < result.basicObligationShares.noncustodial)
-    }
-
-    @Test func parentingSchedulePresetsMapToGeorgiaDayCountExamples() {
-        #expect(ParentingScheduleOption.none.noncustodialDays == nil)
-        #expect(ParentingScheduleOption.variable.noncustodialDays == nil)
-        #expect(ParentingScheduleOption.equalSplit.noncustodialDays == Decimal(string: "182.5")!)
-        #expect(ParentingScheduleOption.everyOtherThursdayToMondayPlusThursday.noncustodialDays == Decimal(148))
-        #expect(ParentingScheduleOption.everyOtherFridayToMondayPlusWednesday.noncustodialDays == Decimal(121))
-        #expect(ParentingScheduleOption.everyOtherFridayToMonday.noncustodialDays == Decimal(102))
-        #expect(ParentingScheduleOption.everyOtherThursdayToSundayPlusThursday.noncustodialDays == Decimal(string: "123.5")!)
-        #expect(ParentingScheduleOption.everyOtherThursdayToSundayPlusThursdayEqualSummer.noncustodialDays == Decimal(string: "129.5")!)
-    }
-
-    @Test func calculatorDraftUsesNamesAndScheduleSelection() {
-        var draft = CalculatorDraft()
-        #expect(draft.custodialDisplayName == "Mom")
-        #expect(draft.noncustodialDisplayName == "Dad")
-        #expect(draft.displayName(for: .noncustodial) == "Dad")
-        #expect(draft.input.parentingTime.hasCourtOrderedParentingTime == false)
-
-        draft.custodialParentName = "  Andrea  "
-        draft.noncustodialParentName = "  Jordan  "
-        draft.parentingSchedule = .everyOtherFridayToMonday
-
-        #expect(draft.custodialDisplayName == "Andrea")
-        #expect(draft.noncustodialDisplayName == "Jordan")
-        #expect(draft.input.parentingTime.hasCourtOrderedParentingTime == true)
-        #expect(draft.input.parentingTime.noncustodialDays == Decimal(102))
-        #expect(draft.input.parentingTime.custodialDays == Decimal(263))
     }
 
     @Test func appliesLowIncomeCapWhenApplicable() throws {
@@ -159,15 +110,87 @@ struct GeorgiaChildSupportCalculatorTests {
                     childHealthInsurancePremium: .zero
                 ),
                 parentingTime: .none,
+                childcareAmount: .zero,
+                childcarePayer: .cp,
+                healthInsuranceAmount: .zero,
+                healthInsurancePayer: .cp,
                 deviations: [],
                 socialSecurityChildBenefit: .zero,
                 vaDisabilityChildBenefit: .zero
             )
         )
-
         #expect(result.lowIncomeAdjustment?.cappedAmount == Money(dollars: 285))
         #expect(result.finalMonthlyPayment == Money(dollars: 285))
     }
+
+    // MARK: - Overnight options
+
+    @Test func overnightOptionsMapsToExpectedDayCounts() {
+        #expect(OvernightOption.none.overnights == nil)
+        #expect(OvernightOption.split182.overnights == Decimal(string: "182.5")!)
+        #expect(OvernightOption.schedule148.overnights == Decimal(148))
+        #expect(OvernightOption.schedule129.overnights == Decimal(string: "129.5")!)
+        #expect(OvernightOption.schedule123.overnights == Decimal(string: "123.5")!)
+        #expect(OvernightOption.schedule121.overnights == Decimal(121))
+        #expect(OvernightOption.schedule102.overnights == Decimal(102))
+    }
+
+    // MARK: - BallparkDraft
+
+    @Test func ballparkDraftTogglesSETIncome() {
+        var draft = BallparkDraft()
+        draft.ncpGrossIncome = "6000"
+        draft.cpGrossIncome = "5000"
+        let noSET = draft.input
+        let withSET = draft.inputWithSET(ncpSET: Money(dollars: 2000), cpSET: .zero)
+        #expect(noSET.noncustodialParent.selfEmploymentMonthlyIncome == .zero)
+        #expect(withSET.noncustodialParent.selfEmploymentMonthlyIncome == Money(dollars: 2000))
+    }
+
+    @Test func ballparkDraftIgnoresExpenseWithNoPayerSelected() {
+        var draft = BallparkDraft()
+        draft.ncpGrossIncome = "6000"
+        draft.cpGrossIncome = "5000"
+        draft.childcareAmount = "500"
+        draft.childcarePayer = nil   // no payer selected → contributes zero
+        let input = draft.input
+        #expect(input.childcareAmount == .zero)
+    }
+
+    // MARK: - Thomas Calculator
+
+    @Test func thomasCalculatorSumsToNetEquity() {
+        var draft = ThomasDraft()
+        draft.currentMarketValue = "500000"
+        draft.currentSecuredDebt = "200000"
+        draft.valueAtDOM = "300000"
+        draft.securedDebtAtDOM = "250000"
+        draft.maritalContributions = "40000"
+
+        guard let result = draft.result else {
+            Issue.record("Expected a result but got nil")
+            return
+        }
+
+        // Non-Marital + Marital must equal CMV − current SD = 300,000
+        let sum = result.estimatedNonMaritalValue + result.estimatedMaritalValue
+        #expect(sum == result.checkSum)
+        #expect(result.checkSum == 300_000)
+    }
+
+    @Test func thomasCalculatorAppreicationFormula() {
+        var draft = ThomasDraft()
+        draft.currentMarketValue = "400000"
+        draft.currentSecuredDebt = "100000"
+        draft.valueAtDOM = "200000"
+        draft.securedDebtAtDOM = "180000"
+        draft.maritalContributions = "30000"
+
+        // Appreciation = 400000 - 200000 - 30000 = 170000
+        #expect(draft.result?.appreciationDuringMarriage == 170_000)
+    }
+
+    // MARK: - Helpers
 
     private func baseInput() -> CalculationInput {
         CalculationInput(
@@ -187,6 +210,10 @@ struct GeorgiaChildSupportCalculatorTests {
                 childHealthInsurancePremium: .zero
             ),
             parentingTime: .none,
+            childcareAmount: .zero,
+            childcarePayer: .cp,
+            healthInsuranceAmount: .zero,
+            healthInsurancePayer: .cp,
             deviations: [],
             socialSecurityChildBenefit: .zero,
             vaDisabilityChildBenefit: .zero

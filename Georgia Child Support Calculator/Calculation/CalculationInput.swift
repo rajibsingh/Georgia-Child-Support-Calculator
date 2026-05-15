@@ -5,6 +5,10 @@ struct CalculationInput: Equatable {
     var custodialParent: ParentInput
     var noncustodialParent: ParentInput
     var parentingTime: ParentingTimeInput
+    var childcareAmount: Money
+    var childcarePayer: ExpensePayer
+    var healthInsuranceAmount: Money
+    var healthInsurancePayer: ExpensePayer
     var deviations: [DeviationInput]
     var socialSecurityChildBenefit: Money
     var vaDisabilityChildBenefit: Money
@@ -24,6 +28,15 @@ struct ParentInput: Equatable {
         workRelatedChildCare: .zero,
         childHealthInsurancePremium: .zero
     )
+}
+
+/// Which parent writes the check for a shared expense.
+enum ExpensePayer: String, CaseIterable, Identifiable, Equatable {
+    case cp
+    case ncp
+
+    var id: String { rawValue }
+    var label: String { rawValue.uppercased() }
 }
 
 struct ParentingTimeInput: Equatable {

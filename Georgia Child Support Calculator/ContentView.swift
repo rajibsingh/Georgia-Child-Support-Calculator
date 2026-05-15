@@ -1,35 +1,39 @@
 import SwiftUI
 
-struct ContentView: View {
-    @State private var draft = CalculatorDraft()
+// MARK: - Ballpark Child Support (Screen 1)
+
+struct BallparkChildSupportView: View {
+    @State private var draft = BallparkDraft()
+    @State private var showScreen2 = false
     private let calculator = ChildSupportCalculator()
 
-    private var result: Result<CalculationResult, Error> {
-        Result { try calculator.calculate(draft.input) }
+    private var result: Result<CalculationResult, Error>? {
+        guard draft.hasAnyIncome else { return nil }
+        return Result { try calculator.calculate(draft.input) }
     }
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 18) {
+                VStack(spacing: 16) {
                     BrandHeader()
-                    CaseSetupSection(draft: $draft)
-                    ParentSection(title: "\(draft.custodialDisplayName) (custodial)", parent: $draft.custodialParent)
-                    ParentSection(title: "\(draft.noncustodialDisplayName) (noncustodial)", parent: $draft.noncustodialParent)
-                    ParentingTimeSection(draft: $draft)
-                    OptionalAdjustmentsSection(draft: $draft)
-                    ResultSection(result: result, draft: draft)
+                    SummaryBoxRow(result: result)
+                    ChildCountPanel(count: $draft.numberOfChildren)
+                    IncomePanel(draft: $draft)
+                    ParentingTimePanel(overnightOption: $draft.overnightOption)
+                    ExpensesPanel(draft: $draft)
+                    ResultPanel(result: result, onProceed: { showScreen2 = true })
                 }
-                .padding(.horizontal, 18)
-                .padding(.vertical, 20)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 18)
             }
             .background(IntownColors.background.ignoresSafeArea())
-            .navigationTitle("Intown Mediation")
+            .navigationTitle("Working Numbers")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        draft = CalculatorDraft()
+                        draft = BallparkDraft()
                     } label: {
                         Label("Reset", systemImage: "arrow.counterclockwise")
                     }
@@ -37,80 +41,116 @@ struct ContentView: View {
                 }
             }
         }
-        .tint(IntownColors.teal)
+        .sheet(isPresented: $showScreen2) {
+            SETAdjustmentView(ballparkResult: result, draft: $draft)
+        }
     }
 }
 
-private struct BrandHeader: View {
+// MARK: - Brand header
+
+struct BrandHeader: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Child Support Calculator")
-                .font(.system(size: 30, weight: .regular, design: .default))
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Working Numbers")
+                .font(.system(size: 22, weight: .semibold))
                 .foregroundStyle(IntownColors.teal)
                 .accessibilityAddTraits(.isHeader)
-            Text("Guideline estimate for Georgia parents")
-                .font(.body)
-                .foregroundStyle(IntownColors.text)
+            Text("for Georgia Family Attorneys")
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(IntownColors.teal)
+            Text("Back-of-the-envelope estimates for Georgia child support guidelines.")
+                .font(.footnote)
+                .foregroundStyle(IntownColors.secondaryText)
             Rectangle()
                 .fill(IntownColors.teal)
-                .frame(height: 3)
+                .frame(height: 2)
                 .padding(.top, 4)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
+        .padding(16)
         .background(IntownColors.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 
-private struct CaseSetupSection: View {
-    @Binding var draft: CalculatorDraft
+// MARK: - Live summary boxes
+
+private struct SummaryBoxRow: View {
+    var result: Result<CalculationResult, Error>?
+
+    private var calc: CalculationResult? {
+        guard case .success(let r) = result else { return nil }
+        return r
+    }
 
     var body: some View {
-        CalculatorPanel("Case") {
-            PlainTextField(
-                title: "Custodial parent name",
-                placeholder: "Mom or first name",
-                text: $draft.custodialParentName
+        HStack(spacing: 10) {
+            SummaryBox(
+                label: "Combined BCSO",
+                value: calc.map { $0.tableLookup.obligation.formatted() } ?? "$0"
             )
-            PlainTextField(
-                title: "Noncustodial parent name",
-                placeholder: "Dad or first name",
-                text: $draft.noncustodialParentName
+            SummaryBox(
+                label: "CP's Share",
+                value: calc.map { percent($0.proRataShares.custodial) } ?? "0.0%"
             )
-            Text("Names help label the worksheet. The official Georgia calculator alphabetizes parent names for column headings on printed forms.")
-                .font(.footnote)
-                .foregroundStyle(IntownColors.secondaryText)
-            ChildCountSelector(count: $draft.numberOfChildren)
+            SummaryBox(
+                label: "NCP's Share",
+                value: calc.map { percent($0.proRataShares.noncustodial) } ?? "0.0%"
+            )
         }
     }
 }
 
-private struct ChildCountSelector: View {
+struct SummaryBox: View {
+    var label: String
+    var value: String
+
+    var body: some View {
+        VStack(spacing: 4) {
+            Text(label)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(IntownColors.secondaryText)
+                .multilineTextAlignment(.center)
+            Text(value)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(IntownColors.teal)
+                .minimumScaleFactor(0.7)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .padding(.horizontal, 6)
+        .background(IntownColors.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+// MARK: - Child count
+
+private struct ChildCountPanel: View {
     @Binding var count: Int
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            LabeledValue(label: "Children", value: "\(count)")
+        CalculatorPanel("Number of Children") {
             HStack(spacing: 0) {
                 ForEach(1...6, id: \.self) { value in
                     Button {
                         count = value
                     } label: {
                         Text("\(value)")
-                            .font(.body.weight(count == value ? .semibold : .regular))
+                            .font(.title3.weight(count == value ? .semibold : .regular))
                             .foregroundStyle(count == value ? Color.white : IntownColors.teal)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 42)
+                            .frame(height: 50)
                             .background(count == value ? IntownColors.teal : Color.clear)
                     }
-                    .accessibilityLabel("\(value) children")
+                    .accessibilityLabel("\(value) \(value == 1 ? "child" : "children")")
                     .accessibilityAddTraits(count == value ? .isSelected : [])
 
                     if value < 6 {
                         Rectangle()
                             .fill(IntownColors.border)
-                            .frame(width: 1, height: 24)
+                            .frame(width: 1, height: 30)
                     }
                 }
             }
@@ -120,145 +160,209 @@ private struct ChildCountSelector: View {
                 RoundedRectangle(cornerRadius: 6)
                     .stroke(IntownColors.border, lineWidth: 1)
             }
-            .accessibilityIdentifier("childrenSpinner")
+            .accessibilityIdentifier("childrenSelector")
         }
     }
 }
 
-private struct ParentSection: View {
-    var title: String
-    @Binding var parent: ParentDraft
+// MARK: - Income
+
+private struct IncomePanel: View {
+    @Binding var draft: BallparkDraft
 
     var body: some View {
-        CalculatorPanel(title) {
-            CurrencyTextField(
-                title: "Monthly gross income",
-                text: $parent.grossMonthlyIncome
-            )
-            CurrencyTextField(
-                title: "Work related child care",
-                text: $parent.workRelatedChildCare
-            )
-            CurrencyTextField(
-                title: "Child health insurance premium",
-                text: $parent.childHealthInsurancePremium
-            )
-
-            DisclosureGroup("Less common adjustments") {
-                VStack(spacing: 14) {
-                    CurrencyTextField(
-                        title: "Self-employment income",
-                        text: $parent.selfEmploymentMonthlyIncome
-                    )
-                    Text("Preexisting child support actually paid may affect the official worksheet. See O.C.G.A. § 19-6-15 and use the official calculator or legal guidance for that adjustment.")
-                        .font(.footnote)
-                        .foregroundStyle(IntownColors.secondaryText)
-                    Stepper(value: $parent.qualifiedChildren, in: 0...6) {
-                        LabeledValue(label: "Other qualified children", value: "\(parent.qualifiedChildren)")
-                    }
-                }
-                .padding(.top, 10)
-            }
-            .font(.subheadline.weight(.medium))
-            .foregroundStyle(IntownColors.teal)
+        CalculatorPanel("Monthly Gross Income") {
+            CurrencyField(label: "NCP Monthly Gross", text: $draft.ncpGrossIncome)
+            CurrencyField(label: "CP Monthly Gross", text: $draft.cpGrossIncome)
         }
     }
 }
 
-private struct ParentingTimeSection: View {
-    @Binding var draft: CalculatorDraft
+// MARK: - Parenting time
+
+enum OvernightOption: String, CaseIterable, Identifiable, Equatable {
+    case none
+    case split182
+    case schedule148
+    case schedule129
+    case schedule123
+    case schedule121
+    case schedule102
+
+    var id: String { rawValue }
+
+    var overnights: Decimal? {
+        switch self {
+        case .none:         return nil
+        case .split182:     return Decimal(string: "182.5")!
+        case .schedule148:  return Decimal(148)
+        case .schedule129:  return Decimal(string: "129.5")!
+        case .schedule123:  return Decimal(string: "123.5")!
+        case .schedule121:  return Decimal(121)
+        case .schedule102:  return Decimal(102)
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .none:         return "No parenting-time adjustment"
+        case .split182:     return "182.5 — 50/50 (week on/week off)"
+        case .schedule148:  return "148 — 5 overnights/14 days, split summers"
+        case .schedule129:  return "129.5 — Thu–Sun + off-Thu, week-on summer"
+        case .schedule123:  return "123.5 — Thu–Sun + off-Thu, 2 summer weeks each"
+        case .schedule121:  return "121 — 4 overnights/14 days, 3 summer weeks each"
+        case .schedule102:  return "102 — 3 overnights/14 days, 2 summer weeks each"
+        }
+    }
+}
+
+private struct ParentingTimePanel: View {
+    @Binding var overnightOption: OvernightOption
 
     var body: some View {
-        CalculatorPanel("Parenting Time") {
-            Picker("Schedule type", selection: $draft.parentingSchedule) {
-                ForEach(ParentingScheduleOption.allCases) { option in
-                    Text(option.title).tag(option)
+        CalculatorPanel("NCP Overnights") {
+            Picker("NCP Overnights", selection: $overnightOption) {
+                ForEach(OvernightOption.allCases) { option in
+                    Text(option.label).tag(option)
                 }
             }
             .pickerStyle(.menu)
-            .accessibilityIdentifier("parentingSchedulePicker")
+            .accessibilityIdentifier("overnightPicker")
 
-            Text(draft.parentingSchedule.summary)
-                .font(.subheadline)
+            Text("Variable or unusual work schedules (including airline flight schedules) may require a custom court-ordered count or deviation analysis.")
+                .font(.footnote)
+                .foregroundStyle(IntownColors.secondaryText)
+        }
+    }
+}
+
+// MARK: - Expenses
+
+private struct ExpensesPanel: View {
+    @Binding var draft: BallparkDraft
+
+    var body: some View {
+        CalculatorPanel("Childcare & Insurance") {
+            ExpenseRow(
+                label: "Work-related childcare",
+                amount: $draft.childcareAmount,
+                payer: $draft.childcarePayer
+            )
+            Divider()
+            ExpenseRow(
+                label: "Child health insurance",
+                amount: $draft.healthInsuranceAmount,
+                payer: $draft.healthInsurancePayer
+            )
+        }
+    }
+}
+
+private struct ExpenseRow: View {
+    var label: String
+    @Binding var amount: String
+    @Binding var payer: ExpensePayer?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(label)
+                .font(.subheadline.weight(.medium))
                 .foregroundStyle(IntownColors.text)
-
-            if let noncustodialDays = draft.parentingSchedule.noncustodialDays {
-                ResultMetricRow(title: "Noncustodial parenting days", value: noncustodialDays.dayCountText)
-                ResultMetricRow(title: "Custodial parenting days", value: (Decimal(365) - noncustodialDays).dayCountText)
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Schedule day counts are approximate two-year averages from the Georgia Parenting Plan: Day Counts guide.")
-                    .font(.footnote)
-                    .foregroundStyle(IntownColors.secondaryText)
-                Text("Variable or unusual work schedules, including airline flight schedules, may need a custom court-ordered count or deviation analysis.")
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(IntownColors.secondaryText)
-            }
-        }
-    }
-}
-
-private struct OptionalAdjustmentsSection: View {
-    @Binding var draft: CalculatorDraft
-
-    var body: some View {
-        CalculatorPanel("Optional Adjustments") {
-            DisclosureGroup("Deviations and credits") {
-                VStack(spacing: 14) {
-                    CurrencyTextField(title: "Deviation increase", text: $draft.deviationIncrease)
-                    CurrencyTextField(title: "Deviation decrease", text: $draft.deviationDecrease)
-                    CurrencyTextField(title: "Social Security child benefit", text: $draft.socialSecurityChildBenefit)
-                    CurrencyTextField(title: "VA disability child benefit", text: $draft.vaDisabilityChildBenefit)
-                    Text("Deviations require court findings. Use these fields to model known adjustments, not as legal advice.")
-                        .font(.footnote)
+            HStack(spacing: 12) {
+                CurrencyField(label: label, text: $amount)
+                    .frame(maxWidth: .infinity)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Who pays?")
+                        .font(.caption.weight(.medium))
                         .foregroundStyle(IntownColors.secondaryText)
+                    Menu {
+                        Button("CP") { payer = .cp }
+                        Button("NCP") { payer = .ncp }
+                        Button("Clear") { payer = nil }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(payer?.label ?? "Select")
+                                .font(.subheadline)
+                                .foregroundStyle(payer == nil ? IntownColors.secondaryText : IntownColors.text)
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.caption)
+                                .foregroundStyle(IntownColors.secondaryText)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .background(IntownColors.surface)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 6)
+                                .stroke(IntownColors.border, lineWidth: 1)
+                        }
+                    }
                 }
-                .padding(.top, 10)
             }
-            .font(.subheadline.weight(.medium))
-            .foregroundStyle(IntownColors.teal)
         }
     }
 }
 
-private struct ResultSection: View {
-    var result: Result<CalculationResult, Error>
-    var draft: CalculatorDraft
+// MARK: - Result panel
+
+private struct ResultPanel: View {
+    var result: Result<CalculationResult, Error>?
+    var onProceed: () -> Void
 
     var body: some View {
-        CalculatorPanel("Estimate") {
+        CalculatorPanel(payerLabel) {
             switch result {
-            case .success(let calculation):
-                VStack(alignment: .leading, spacing: 16) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(calculation.finalMonthlyPayment.formatted())
-                            .font(.system(size: 40, weight: .semibold))
+            case .none:
+                Text("Enter income above to see an estimate.")
+                    .font(.body)
+                    .foregroundStyle(IntownColors.secondaryText)
+
+            case .some(.success(let calc)):
+                VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(calc.finalMonthlyPayment.formatted())
+                            .font(.system(size: 44, weight: .semibold))
                             .foregroundStyle(IntownColors.teal)
                             .accessibilityIdentifier("finalPayment")
-                        Text("\(draft.displayName(for: calculation.payer)) pays monthly")
+                        Text("\(calc.payer.label) pays monthly")
                             .font(.headline)
                             .foregroundStyle(IntownColors.text)
+                        Text("Note: ignores SET, low-income adjustment, and other exceptions. Proceed to Screen 2 for more accurate results.")
+                            .font(.subheadline)
+                            .foregroundStyle(IntownColors.secondaryText)
+                            .padding(.top, 2)
                     }
 
                     VStack(spacing: 0) {
-                        ForEach(calculation.trace) { step in
+                        ForEach(calc.trace) { step in
                             ResultMetricRow(title: step.title, value: step.value)
                         }
                     }
 
-                    if let lowIncomeAdjustment = calculation.lowIncomeAdjustment {
+                    if let lia = calc.lowIncomeAdjustment {
                         ResultMetricRow(
                             title: "Low-income adjustment",
-                            value: "\(lowIncomeAdjustment.originalAmount.formatted()) to \(lowIncomeAdjustment.cappedAmount.formatted())"
+                            value: "\(lia.originalAmount.formatted()) → \(lia.cappedAmount.formatted())"
                         )
                     }
 
-                    Text("This estimate is not legal advice or a court order.")
-                        .font(.footnote.weight(.medium))
+                    Text("If NCP Pays is negative, CP owes NCP that amount.")
+                        .font(.footnote)
                         .foregroundStyle(IntownColors.secondaryText)
+
+                    Button(action: onProceed) {
+                        Text("Proceed to Screen 2 → SET & other adjustments")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(Color.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(IntownColors.teal)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                    .accessibilityIdentifier("proceedButton")
                 }
-            case .failure(let error):
+
+            case .some(.failure(let error)):
                 Text(error.localizedDescription)
                     .font(.body)
                     .foregroundStyle(IntownColors.error)
@@ -266,9 +370,156 @@ private struct ResultSection: View {
             }
         }
     }
+
+    private var payerLabel: String {
+        guard case .some(.success(let calc)) = result else { return "NCP Pays" }
+        return "\(calc.payer.label) Pays"
+    }
 }
 
-private struct CalculatorPanel<Content: View>: View {
+// MARK: - Screen 2: SET Adjustment
+
+struct SETAdjustmentView: View {
+    var ballparkResult: Result<CalculationResult, Error>?
+    @Binding var draft: BallparkDraft
+    @Environment(\.dismiss) private var dismiss
+    private let calculator = ChildSupportCalculator()
+
+    @State private var ncpSETIncome = ""
+    @State private var cpSETIncome = ""
+
+    private var adjustedResult: Result<CalculationResult, Error>? {
+        guard draft.hasAnyIncome else { return nil }
+        return Result { try calculator.calculate(draft.inputWithSET(ncpSET: ncpSETIncome.asMoney, cpSET: cpSETIncome.asMoney)) }
+    }
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 16) {
+                    if let ballpark = ballparkResult, case .success(let r) = ballpark {
+                        CalculatorPanel("Ballpark (Screen 1)") {
+                            ResultMetricRow(title: "Before SET adjustment", value: r.finalMonthlyPayment.formatted())
+                            ResultMetricRow(title: "Payer", value: r.payer.label)
+                        }
+                    }
+
+                    CalculatorPanel("Self-Employment Income") {
+                        CurrencyField(label: "NCP gross income subject to SET", text: $ncpSETIncome)
+                        CurrencyField(label: "CP gross income subject to SET", text: $cpSETIncome)
+                        Text("App deducts one-half of SE tax (7.65%) from the SET income entered above before calculating adjusted gross income.")
+                            .font(.footnote)
+                            .foregroundStyle(IntownColors.secondaryText)
+                    }
+
+                    if let adjusted = adjustedResult {
+                        CalculatorPanel(adjustedPayerLabel(from: adjusted)) {
+                            switch adjusted {
+                            case .success(let calc):
+                                VStack(alignment: .leading, spacing: 14) {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(calc.finalMonthlyPayment.formatted())
+                                            .font(.system(size: 44, weight: .semibold))
+                                            .foregroundStyle(IntownColors.teal)
+                                        Text("\(calc.payer.label) pays monthly")
+                                            .font(.headline)
+                                            .foregroundStyle(IntownColors.text)
+                                    }
+                                    VStack(spacing: 0) {
+                                        ForEach(calc.trace) { step in
+                                            ResultMetricRow(title: step.title, value: step.value)
+                                        }
+                                    }
+                                }
+                            case .failure(let error):
+                                Text(error.localizedDescription)
+                                    .foregroundStyle(IntownColors.error)
+                            }
+                        }
+                    }
+
+                    CalculatorPanel("Coming Soon") {
+                        Text("Low-income adjustment, SSI, Social Security Title II, and VA disability derivative benefit offsets will be added in a future version.")
+                            .font(.body)
+                            .foregroundStyle(IntownColors.secondaryText)
+                    }
+                }
+                .padding(16)
+            }
+            .background(IntownColors.background.ignoresSafeArea())
+            .navigationTitle("SET & Adjustments")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Back") { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func adjustedPayerLabel(from result: Result<CalculationResult, Error>) -> String {
+        guard case .success(let calc) = result else { return "NCP Pays" }
+        return "\(calc.payer.label) Pays (with SET)"
+    }
+}
+
+// MARK: - Draft model
+
+struct BallparkDraft: Equatable {
+    var numberOfChildren = 2
+    var ncpGrossIncome = ""
+    var cpGrossIncome = ""
+    var overnightOption: OvernightOption = .none
+    var childcareAmount = ""
+    var childcarePayer: ExpensePayer? = nil
+    var healthInsuranceAmount = ""
+    var healthInsurancePayer: ExpensePayer? = nil
+
+    var hasAnyIncome: Bool {
+        ncpGrossIncome.asMoney.cents > 0 || cpGrossIncome.asMoney.cents > 0
+    }
+
+    var input: CalculationInput {
+        inputWithSET(ncpSET: .zero, cpSET: .zero)
+    }
+
+    func inputWithSET(ncpSET: Money, cpSET: Money) -> CalculationInput {
+        let ncpDays = overnightOption.overnights ?? 0
+        return CalculationInput(
+            numberOfChildren: numberOfChildren,
+            custodialParent: ParentInput(
+                grossMonthlyIncome: cpGrossIncome.asMoney,
+                selfEmploymentMonthlyIncome: cpSET,
+                qualifiedChildren: 0,
+                workRelatedChildCare: .zero,
+                childHealthInsurancePremium: .zero
+            ),
+            noncustodialParent: ParentInput(
+                grossMonthlyIncome: ncpGrossIncome.asMoney,
+                selfEmploymentMonthlyIncome: ncpSET,
+                qualifiedChildren: 0,
+                workRelatedChildCare: .zero,
+                childHealthInsurancePremium: .zero
+            ),
+            parentingTime: ParentingTimeInput(
+                hasCourtOrderedParentingTime: overnightOption != .none,
+                custodialDays: Decimal(365) - ncpDays,
+                noncustodialDays: ncpDays
+            ),
+            childcareAmount: childcarePayer != nil ? childcareAmount.asMoney : .zero,
+            childcarePayer: childcarePayer ?? .cp,
+            healthInsuranceAmount: healthInsurancePayer != nil ? healthInsuranceAmount.asMoney : .zero,
+            healthInsurancePayer: healthInsurancePayer ?? .cp,
+            deviations: [],
+            socialSecurityChildBenefit: .zero,
+            vaDisabilityChildBenefit: .zero
+        )
+    }
+}
+
+// MARK: - Shared UI components
+
+struct CalculatorPanel<Content: View>: View {
     var title: String
     @ViewBuilder var content: Content
 
@@ -286,80 +537,30 @@ private struct CalculatorPanel<Content: View>: View {
             content
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
+        .padding(16)
         .background(IntownColors.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
 
-private struct CurrencyTextField: View {
-    var title: String
-    @Binding var text: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(IntownColors.text)
-            TextField("0", text: $text)
-                .keyboardType(.decimalPad)
-                .textFieldStyle(IntownTextFieldStyle())
-                .accessibilityIdentifier(title.replacingOccurrences(of: " ", with: "_"))
-        }
-    }
-}
-
-private struct PlainTextField: View {
-    var title: String
-    var placeholder: String
-    @Binding var text: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(IntownColors.text)
-            TextField(placeholder, text: $text)
-                .textFieldStyle(IntownTextFieldStyle())
-                .textInputAutocapitalization(.words)
-                .accessibilityIdentifier(title.replacingOccurrences(of: " ", with: "_"))
-        }
-    }
-}
-
-private struct NumberTextField: View {
-    var title: String
-    @Binding var text: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(IntownColors.text)
-            TextField("0", text: $text)
-                .keyboardType(.decimalPad)
-                .textFieldStyle(IntownTextFieldStyle())
-        }
-    }
-}
-
-private struct LabeledValue: View {
+struct CurrencyField: View {
     var label: String
-    var value: String
+    @Binding var text: String
 
     var body: some View {
-        HStack {
+        VStack(alignment: .leading, spacing: 6) {
             Text(label)
+                .font(.subheadline.weight(.medium))
                 .foregroundStyle(IntownColors.text)
-            Spacer()
-            Text(value)
-                .font(.body.weight(.semibold))
-                .foregroundStyle(IntownColors.teal)
+            TextField("0", text: $text)
+                .keyboardType(.decimalPad)
+                .textFieldStyle(IntownTextFieldStyle())
+                .accessibilityIdentifier(label.replacingOccurrences(of: " ", with: "_"))
         }
     }
 }
 
-private struct ResultMetricRow: View {
+struct ResultMetricRow: View {
     var title: String
     var value: String
 
@@ -367,7 +568,7 @@ private struct ResultMetricRow: View {
         HStack(alignment: .firstTextBaseline) {
             Text(title)
                 .foregroundStyle(IntownColors.text)
-            Spacer(minLength: 18)
+            Spacer(minLength: 16)
             Text(value)
                 .font(.body.weight(.semibold))
                 .foregroundStyle(IntownColors.text)
@@ -383,7 +584,7 @@ private struct ResultMetricRow: View {
     }
 }
 
-private struct IntownTextFieldStyle: TextFieldStyle {
+struct IntownTextFieldStyle: TextFieldStyle {
     func _body(configuration: TextField<Self._Label>) -> some View {
         configuration
             .font(.body)
@@ -398,7 +599,9 @@ private struct IntownTextFieldStyle: TextFieldStyle {
     }
 }
 
-private enum IntownColors {
+// MARK: - Colors
+
+enum IntownColors {
     static let teal = Color(red: 0.0, green: 0.392, blue: 0.537)
     static let text = Color(red: 0.345, green: 0.345, blue: 0.353)
     static let secondaryText = Color(red: 0.4, green: 0.4, blue: 0.4)
@@ -408,183 +611,13 @@ private enum IntownColors {
     static let error = Color(red: 0.729, green: 0.133, blue: 0.153)
 }
 
-struct CalculatorDraft: Equatable {
-    var numberOfChildren = 2
-    var custodialParentName = "Mom"
-    var noncustodialParentName = "Dad"
-    var custodialParent = ParentDraft(grossMonthlyIncome: "5000")
-    var noncustodialParent = ParentDraft(grossMonthlyIncome: "6000")
-    var parentingSchedule = ParentingScheduleOption.none
-    var deviationIncrease = ""
-    var deviationDecrease = ""
-    var socialSecurityChildBenefit = ""
-    var vaDisabilityChildBenefit = ""
+// MARK: - String helpers
 
-    var custodialDisplayName: String {
-        cleanedName(custodialParentName, fallback: "Custodial parent")
-    }
-
-    var noncustodialDisplayName: String {
-        cleanedName(noncustodialParentName, fallback: "Noncustodial parent")
-    }
-
-    func displayName(for role: ParentRole) -> String {
-        switch role {
-        case .custodial:
-            custodialDisplayName
-        case .noncustodial:
-            noncustodialDisplayName
-        }
-    }
-
-    var input: CalculationInput {
-        var deviations: [DeviationInput] = []
-        if deviationIncrease.money.isPositive {
-            deviations.append(DeviationInput(label: "Deviation increase", amount: deviationIncrease.money, direction: .increase))
-        }
-        if deviationDecrease.money.isPositive {
-            deviations.append(DeviationInput(label: "Deviation decrease", amount: deviationDecrease.money, direction: .decrease))
-        }
-
-        return CalculationInput(
-            numberOfChildren: numberOfChildren,
-            custodialParent: custodialParent.input,
-            noncustodialParent: noncustodialParent.input,
-            parentingTime: ParentingTimeInput(
-                hasCourtOrderedParentingTime: parentingSchedule.noncustodialDays != nil,
-                custodialDays: parentingSchedule.custodialDays,
-                noncustodialDays: parentingSchedule.noncustodialDays ?? 0
-            ),
-            deviations: deviations,
-            socialSecurityChildBenefit: socialSecurityChildBenefit.money,
-            vaDisabilityChildBenefit: vaDisabilityChildBenefit.money
-        )
-    }
-
-    private func cleanedName(_ value: String, fallback: String) -> String {
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? fallback : trimmed
-    }
-}
-
-struct ParentDraft: Equatable {
-    var grossMonthlyIncome = ""
-    var selfEmploymentMonthlyIncome = ""
-    var qualifiedChildren = 0
-    var workRelatedChildCare = ""
-    var childHealthInsurancePremium = ""
-
-    var input: ParentInput {
-        ParentInput(
-            grossMonthlyIncome: grossMonthlyIncome.money,
-            selfEmploymentMonthlyIncome: selfEmploymentMonthlyIncome.money,
-            qualifiedChildren: qualifiedChildren,
-            workRelatedChildCare: workRelatedChildCare.money,
-            childHealthInsurancePremium: childHealthInsurancePremium.money
-        )
-    }
-}
-
-enum ParentingScheduleOption: String, CaseIterable, Identifiable {
-    case none
-    case equalSplit
-    case everyOtherThursdayToMondayPlusThursday
-    case everyOtherFridayToMondayPlusWednesday
-    case everyOtherFridayToMonday
-    case everyOtherThursdayToSundayPlusThursday
-    case everyOtherThursdayToSundayPlusThursdayEqualSummer
-    case variable
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .none:
-            "No court-ordered schedule"
-        case .equalSplit:
-            "Equal / split parenting time"
-        case .everyOtherThursdayToMondayPlusThursday:
-            "Every other Thu-Mon + off-week Thu"
-        case .everyOtherFridayToMondayPlusWednesday:
-            "Every other Fri-Mon + off-week Wed"
-        case .everyOtherFridayToMonday:
-            "Every other Fri-Mon"
-        case .everyOtherThursdayToSundayPlusThursday:
-            "Every other Thu-Sun + off-week Thu"
-        case .everyOtherThursdayToSundayPlusThursdayEqualSummer:
-            "Thu-Sun + off-week Thu, week-on summer"
-        case .variable:
-            "Variable or unusual schedule"
-        }
-    }
-
-    var summary: String {
-        switch self {
-        case .none:
-            "No parenting-time adjustment is applied."
-        case .equalSplit:
-            "Week on/week off, two consecutive summer weeks, holidays divided and alternated."
-        case .everyOtherThursdayToMondayPlusThursday:
-            "Every other Thursday to Monday, Thursday in the off week, week-on/week-off summer, holidays divided and alternated."
-        case .everyOtherFridayToMondayPlusWednesday:
-            "Every other Friday to Monday, Wednesday in the off week, three summer weeks each, holidays divided and alternated."
-        case .everyOtherFridayToMonday:
-            "Every other Friday to Monday, two summer weeks each, holidays divided and alternated."
-        case .everyOtherThursdayToSundayPlusThursday:
-            "Every other Thursday to Sunday, Thursday in the off week, two summer weeks each, holidays divided and alternated."
-        case .everyOtherThursdayToSundayPlusThursdayEqualSummer:
-            "Every other Thursday to Sunday, Thursday in the off week, week-on/week-off summer, holidays divided and alternated."
-        case .variable:
-            "Use this when a repeating template does not fit. The estimate does not apply a parenting-time adjustment for this selection."
-        }
-    }
-
-    var noncustodialDays: Decimal? {
-        switch self {
-        case .none, .variable:
-            nil
-        case .equalSplit:
-            Decimal(string: "182.5")!
-        case .everyOtherThursdayToMondayPlusThursday:
-            Decimal(148)
-        case .everyOtherFridayToMondayPlusWednesday:
-            Decimal(121)
-        case .everyOtherFridayToMonday:
-            Decimal(102)
-        case .everyOtherThursdayToSundayPlusThursday:
-            Decimal(string: "123.5")!
-        case .everyOtherThursdayToSundayPlusThursdayEqualSummer:
-            Decimal(string: "129.5")!
-        }
-    }
-
-    var custodialDays: Decimal {
-        guard let noncustodialDays else {
-            return 365
-        }
-
-        return Decimal(365) - noncustodialDays
-    }
-}
-
-private extension String {
-    var money: Money {
-        Money(decimalDollars: decimalValue(default: 0))
-    }
-
-    func decimalValue(default defaultValue: Decimal) -> Decimal {
+extension String {
+    var asMoney: Money {
         let cleaned = replacingOccurrences(of: ",", with: "")
             .replacingOccurrences(of: "$", with: "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        return Decimal(string: cleaned) ?? defaultValue
-    }
-}
-
-private extension Decimal {
-    var dayCountText: String {
-        let number = NSDecimalNumber(decimal: self)
-        return number.doubleValue.truncatingRemainder(dividingBy: 1) == 0
-            ? "\(number.intValue)"
-            : "\(number.doubleValue)"
+        return Money(decimalDollars: Decimal(string: cleaned) ?? 0)
     }
 }
