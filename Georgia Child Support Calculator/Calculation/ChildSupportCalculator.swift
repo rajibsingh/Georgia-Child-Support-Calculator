@@ -36,12 +36,12 @@ struct ChildSupportCalculator {
             parentingTime: input.parentingTime
         )
 
-        let totalAdditionalExpenses = input.custodialParent.workRelatedChildCare
-            + input.custodialParent.childHealthInsurancePremium
-            + input.noncustodialParent.workRelatedChildCare
-            + input.noncustodialParent.childHealthInsurancePremium
-        let custodialAdditional = totalAdditionalExpenses * custodialShare
-        let noncustodialAdditional = totalAdditionalExpenses * noncustodialShare
+        let cpPaidExpenses: Money = (input.childcarePayer == .cp ? input.childcareAmount : .zero)
+            + (input.healthInsurancePayer == .cp ? input.healthInsuranceAmount : .zero)
+        let ncpPaidExpenses: Money = (input.childcarePayer == .ncp ? input.childcareAmount : .zero)
+            + (input.healthInsurancePayer == .ncp ? input.healthInsuranceAmount : .zero)
+        let noncustodialAdditional = cpPaidExpenses * noncustodialShare - ncpPaidExpenses * custodialShare
+        let custodialAdditional = ncpPaidExpenses * custodialShare - cpPaidExpenses * noncustodialShare
 
         var presumptive = parentingTimeAdjusted + noncustodialAdditional
         let deviationTotal = input.deviations.reduce(Money.zero) { partial, deviation in

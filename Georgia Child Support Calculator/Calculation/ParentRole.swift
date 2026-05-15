@@ -7,9 +7,9 @@ enum ParentRole: String, CaseIterable, Identifiable, Sendable {
     var label: String {
         switch self {
         case .custodial:
-            "Custodial parent"
+            "CP"
         case .noncustodial:
-            "Noncustodial parent"
+            "NCP"
         }
     }
 }
