@@ -1,68 +1,57 @@
-# Intown Mediation Child Support Calculator Architecture
+# Working Numbers — Architecture
 
 ## Overview
 
-This app should be built as an Intown Mediation-branded SwiftUI iOS application with a pure Swift calculation core. The UI collects worksheet-style inputs, the domain layer performs deterministic Georgia guideline calculations, and the results layer explains each step used to produce the final estimate.
+Working Numbers for Georgia Family Attorneys is a SwiftUI iOS app with a pure Swift calculation core. The UI collects inputs, the domain layer performs deterministic calculations, and the results layer explains each step.
 
-The project currently includes:
-
-- App target: `Georgia Child Support Calculator`
-- Unit test target: `Georgia Child Support CalculatorTests`
-- UI test target: `Georgia Child Support CalculatorUITests`
-- Source documents in `docs/`
-
-The starter SwiftData sample has been removed. The current app boots directly into a SwiftUI calculator workflow backed by the calculation module and test targets.
+The app uses a tab-bar root (`RootTabView`) with six modes. Two modes are currently implemented: Ballpark Child Support and Thomas Calculator. The remaining four are coming-soon placeholders.
 
 ## Source Layout
 
-Current app source structure:
-
 ```text
 Georgia Child Support Calculator/
-  Georgia_Child_Support_CalculatorApp.swift
-  ContentView.swift
+  Georgia_Child_Support_CalculatorApp.swift   — @main, launches RootTabView
+  RootTabView.swift                           — TabView root, ComingSoonView, MoreMenuView
+  ContentView.swift                           — BallparkChildSupportView, SETAdjustmentView,
+                                                BallparkDraft, OvernightOption, shared UI components,
+                                                IntownColors, String.asMoney
+  ThomasCalculatorView.swift                  — ThomasCalculatorView, ThomasDraft, ThomasResult
   Calculation/
-    ChildSupportCalculator.swift
-    CalculationInput.swift
-    CalculationResult.swift
-    Money.swift
-    ParentRole.swift
+    ChildSupportCalculator.swift              — Stateless calculator struct
+    CalculationInput.swift                    — CalculationInput, ParentInput, ParentingTimeInput,
+                                                DeviationInput, ExpensePayer
+    CalculationResult.swift                   — CalculationResult, CalculationStep, AppliedCredits,
+                                                AppliedLowIncomeAdjustment, CalculationError
+    Money.swift                               — Money value type (integer cents + Decimal API)
+    ParentRole.swift                          — ParentRole enum (custodial/noncustodial), ParentPair<T>
   Calculation/Tables/
-    BasicObligationTable.swift
-    BasicObligationTableData.swift
-    LowIncomeAdjustmentTable.swift
-    LowIncomeAdjustmentTableData.swift
-    StatutoryTableVersion.swift
-```
+    BasicObligationTable.swift                — ObligationTableProviding protocol + production impl
+    BasicObligationTableData.swift            — 2026 BCSO table encoded from statutory PDF
+    LowIncomeAdjustmentTable.swift            — LowIncomeTableProviding protocol + production impl
+    LowIncomeAdjustmentTableData.swift        — 2026 low-income table encoded from statutory PDF
+    StatutoryTableVersion.swift               — Version metadata
 
-Current test source structure:
-
-```text
 Georgia Child Support CalculatorTests/
-  Georgia_Child_Support_CalculatorTests.swift
+  Georgia_Child_Support_CalculatorTests.swift — Unit tests: tables, calculator, draft model, Thomas calc
 
 Georgia Child Support CalculatorUITests/
   Georgia_Child_Support_CalculatorUITests.swift
   Georgia_Child_Support_CalculatorUITestsLaunchTests.swift
 ```
 
-Future growth can split `ContentView.swift` into dedicated view files and split the unit tests by rule area once the app surface expands.
+The Xcode project uses `PBXFileSystemSynchronizedRootGroup`, so new `.swift` files added to the folder are picked up automatically without editing `project.pbxproj`.
 
 ## Architectural Principles
 
-Calculation code shall not depend on SwiftUI, SwiftData, UIKit, or device state.
-
-The UI shall not duplicate business logic. It should bind user inputs into `CalculationInput`, call the calculator, and render `CalculationResult`.
-
-Statutory tables shall be data, not hard-coded branching logic. Table parsing/loading can be isolated behind protocols so tests can inject small fixture tables. The production table data shall be converted from the statutory PDF and covered by tests that compare encoded values against PDF-derived reference fixtures.
-
-Money shall be represented by integer cents or `Decimal`. Avoid `Double` for final money values. `Double` may be used only inside the parenting time exponent formula, then converted back through an explicit rounding policy.
-
-Every calculation step shall produce traceable output. Results should include enough intermediate values to explain the estimate and to make failing tests easy to diagnose.
+- **Calculation code has no UI dependencies.** `ChildSupportCalculator` and all types in `Calculation/` import only `Foundation`.
+- **The UI does not duplicate business logic.** Views bind inputs into `CalculationInput` (or `ThomasDraft`), call the calculation layer, and render results.
+- **Statutory tables are data, not branching logic.** Table access is behind protocols so tests can inject small fixture tables.
+- **Money uses `Decimal` / integer cents.** `Double` is permitted only inside the parenting-time exponent formula, with explicit conversion back.
+- **Every result is traceable.** `CalculationResult.trace` exposes each intermediate step for display and test assertion.
 
 ## Domain Model
 
-Core input types:
+### Child Support Inputs
 
 ```swift
 struct CalculationInput {
@@ -70,6 +59,10 @@ struct CalculationInput {
     var custodialParent: ParentInput
     var noncustodialParent: ParentInput
     var parentingTime: ParentingTimeInput
+    var childcareAmount: Money
+    var childcarePayer: ExpensePayer       // .cp or .ncp
+    var healthInsuranceAmount: Money
+    var healthInsurancePayer: ExpensePayer
     var deviations: [DeviationInput]
     var socialSecurityChildBenefit: Money
     var vaDisabilityChildBenefit: Money
@@ -77,16 +70,25 @@ struct CalculationInput {
 
 struct ParentInput {
     var grossMonthlyIncome: Money
-    var selfEmploymentMonthlyIncome: Money
-    var qualifiedChildren: Int
-    var workRelatedChildCare: Money
-    var childHealthInsurancePremium: Money
+    var selfEmploymentMonthlyIncome: Money // used for SET deduction
+    var qualifiedChildren: Int             // for theoretical support credit
+    var workRelatedChildCare: Money        // legacy field; zeroed out in Ballpark flow
+    var childHealthInsurancePremium: Money // legacy field; zeroed out in Ballpark flow
+}
+
+enum ExpensePayer: String, CaseIterable, Identifiable {
+    case cp
+    case ncp
 }
 ```
 
-Preexisting child support actually paid is a documented informational note in the first release, not an active calculation input. This avoids applying an incomplete simplified adjustment where users should consult O.C.G.A. § 19-6-15 and the official worksheet.
+Expenses are collected at the `CalculationInput` level (single amount + payer) rather than per-parent. The calculator derives NCP's net additional obligation as:
 
-Core output types:
+```
+NCP additional = (NCP share × CP-paid expenses) − (CP share × NCP-paid expenses)
+```
+
+### Child Support Results
 
 ```swift
 struct CalculationResult {
@@ -98,7 +100,7 @@ struct CalculationResult {
     var parentingTimeAdjustedNoncustodialAmount: Money
     var additionalExpenseShares: ParentPair<Money>
     var presumptiveSupport: Money
-    var deviations: [AppliedDeviation]
+    var deviationTotal: Money
     var lowIncomeAdjustment: AppliedLowIncomeAdjustment?
     var credits: AppliedCredits
     var payer: ParentRole
@@ -108,183 +110,152 @@ struct CalculationResult {
 }
 ```
 
-Use a small `ParentPair<T>` value type to keep custodial and noncustodial values together and reduce swapped-parent mistakes.
+### Thomas Calculator Model
+
+```swift
+struct ThomasDraft {
+    var currentMarketValue: String
+    var currentSecuredDebt: String
+    var valueAtDOM: String       // value at date of marriage
+    var securedDebtAtDOM: String // secured debt at date of marriage
+    var maritalContributions: String
+
+    var result: ThomasResult? { ... } // computed; nil until CMV and V_DOM are entered
+}
+
+struct ThomasResult {
+    var appreciationDuringMarriage: Decimal
+    var maritalShareCapital: Decimal
+    var estimatedNonMaritalValue: Decimal
+    var estimatedMaritalValue: Decimal
+    var checkSum: Decimal  // should equal CMV − current SD
+}
+```
+
+### UI Draft Model
+
+```swift
+struct BallparkDraft {
+    var numberOfChildren: Int
+    var ncpGrossIncome: String
+    var cpGrossIncome: String
+    var overnightOption: OvernightOption
+    var childcareAmount: String
+    var childcarePayer: ExpensePayer?    // nil = no payer selected → zero contribution
+    var healthInsuranceAmount: String
+    var healthInsurancePayer: ExpensePayer?
+
+    var hasAnyIncome: Bool              // false → result panel shows placeholder, not $0
+    func inputWithSET(ncpSET:cpSET:) -> CalculationInput
+}
+```
+
+`BallparkDraft` bridges text-field strings to the typed `CalculationInput`. When `childcarePayer` or `healthInsurancePayer` is `nil`, the corresponding amount is zeroed before passing to the calculator.
 
 ## Calculation Pipeline
 
-The calculator should run the statutory worksheet flow in a fixed order:
+The calculator runs the statutory worksheet flow in a fixed order:
 
-1. Validate child count, income, parenting time, and expense inputs.
-2. Calculate monthly gross income for each parent.
-3. Apply adjusted income deductions: self-employment tax, then theoretical support for qualified children. Display preexisting support actually paid as a statute note, not as a deduction in this simplified flow.
-4. Add adjusted incomes to produce combined adjusted gross income.
-5. Lookup the basic child support obligation using the nearest statutory income bracket and child count.
-6. Calculate each parent's pro rata income share.
-7. Calculate each parent's basic child support obligation share.
-8. Apply the 2026 parenting time adjustment when the selected court ordered schedule maps to a known Georgia Parenting Plan day-count example.
-9. Allocate child health insurance and work related child care by pro rata share.
-10. Calculate presumptive child support.
-11. Apply user-entered deviations.
-12. Apply the low-income adjustment when the table applies.
-13. Apply qualifying Social Security Title II and VA disability credits.
-14. Determine the payer and final monthly payment.
-15. Return a traceable result for UI display and tests.
+1. Validate child count, income, parenting time.
+2. Apply SET deduction (one-half of 7.65% × `selfEmploymentMonthlyIncome`).
+3. Apply theoretical support credit for other qualified children (optional; zeroed in Ballpark flow).
+4. Compute combined adjusted gross income and pro-rata shares.
+5. Look up basic child support obligation by nearest income bracket and child count.
+6. Calculate each parent's basic obligation share.
+7. Apply parenting-time adjustment (days^2.5 formula) when a schedule with known day count is selected.
+8. Compute NCP's net additional expense obligation (payer-aware pro-rata logic).
+9. Apply deviations (zeroed in Ballpark flow).
+10. Apply low-income adjustment if applicable.
+11. Apply SS/VA credits (zeroed in Ballpark flow).
+12. Determine payer and final monthly payment.
+13. Return traceable `CalculationResult`.
+
+The SET adjustment on Screen 2 re-runs the same pipeline with `selfEmploymentMonthlyIncome` populated from Screen 2 inputs.
+
+## UI Structure
+
+### Tab Bar Root
+
+`RootTabView` owns the `TabView`. Five tabs are shown: Ballpark CS, Thomas Calc, Detailed CS, Parenting Time, and More. More contains a `NavigationStack` list linking to Marital Balance Sheet and Pension Calculator (both `ComingSoonView`).
+
+### Ballpark Child Support
+
+`BallparkChildSupportView` owns `BallparkDraft` as `@State`. It computes `result: Result<CalculationResult, Error>?` — `nil` when `hasAnyIncome` is false, which prevents the result panel from showing a misleading $0 before any income is entered.
+
+Screen 2 (`SETAdjustmentView`) is presented as a `.sheet`. It holds its own `@State` for SET income fields and re-runs `draft.inputWithSET(...)` live.
+
+### Thomas Calculator
+
+`ThomasCalculatorView` owns `ThomasDraft` as `@State`. `ThomasDraft.result` is a computed property — no separate calculation call needed. The result panel appears only when both CMV and V_DOM are entered and equity at DOM is positive.
+
+### Shared Components
+
+All shared UI components are defined in `ContentView.swift` with `internal` or `public` access so they can be used by `ThomasCalculatorView` and future screens:
+
+- `CalculatorPanel` — titled card container
+- `CurrencyField` — labeled text field with decimal keyboard
+- `ResultMetricRow` — label/value row with separator
+- `IntownTextFieldStyle` — consistent field styling
+- `IntownColors` — brand color palette
+- `BrandHeader` — "Working Numbers / for Georgia Family Attorneys" header card
+- `SummaryBox` — live summary metric box
 
 ## Statutory Tables
 
-Create versioned resource files for the Basic Child Support Obligation Table and Low-Income Adjustment Table. The app should load these through:
+Table access is behind protocols:
 
 ```swift
 protocol ObligationTableProviding {
-    func basicObligation(forCombinedIncome income: Money, children: Int) throws -> BasicObligationLookupResult
+    func basicObligation(forCombinedIncome: Money, children: Int) throws -> BasicObligationLookupResult
 }
 
 protocol LowIncomeTableProviding {
-    func lowIncomeCap(forAdjustedIncome income: Money, children: Int) -> Money?
+    func lowIncomeCap(forAdjustedIncome: Money, children: Int) -> Money?
 }
 ```
 
-`BasicObligationLookupResult` should include:
-
-- Requested combined adjusted income.
-- Matched table income.
-- Whether the match was exact, nearest, below range, or above range.
-- Number of children.
-- Obligation amount.
-
-For income between rows, use the nearest bracket required by O.C.G.A. § 19-6-15(b)(4), not the simplified guide's round-down shortcut.
-
-Table conversion should be treated as its own implementation slice:
-
-- Extract source values from `docs/O.C.G.A.-_-19-6-15_01.01.2026.pdf`.
-- Normalize money values to integer cents or whole-dollar `Money` values.
-- Encode production lookup data as JSON or generated Swift, whichever is easiest to audit and safest to load in the app target.
-- Store a small PDF-derived verification fixture separately from production data.
-- Test production data against the verification fixture, including first and last rows, middle rows, all child-count columns, nearest-row behavior, and low-income table boundaries.
-
-## Persistence
-
-The first release shall not include saved scenarios. Keep the calculation state in memory during the active session.
-
-Future saved scenarios can use SwiftData once the domain model is stable. Persisted scenario records should store user-entered inputs and table version, not only final outputs. This allows saved scenarios to be recalculated when rules or tables change while still showing which version produced the original result.
-
-Do not store sensitive data in analytics or remote services.
-
-## SwiftUI Structure
-
-The UI should be a focused calculator workflow:
-
-- `CalculatorFlowView` owns the draft scenario and navigation state.
-- Step views edit a narrow slice of the scenario.
-- `ResultsView` renders `CalculationResult` and its trace.
-- Shared field components handle currency, percentages, child counts, and validation.
-
-All UI controls used by UI tests shall have stable accessibility identifiers.
-
-The result should update live when inputs are valid. Invalid or incomplete inputs should show actionable inline validation and keep the previous valid result out of the primary result area to avoid stale estimates.
-
-Advanced 2026 adjustments should be available without making the common path feel busy. Use collapsed optional sections, disclosure groups, or "Add adjustment" flows for low-frequency inputs such as deviations, Social Security/VA credits, theoretical child support orders, and nonstandard healthcare allocations.
-
-Current UI behavior:
-
-- The case section collects parent display names, defaulting to `Mom` and `Dad`, and notes the official calculator's alphabetized column-heading behavior.
-- Child count uses a visible 1 through 6 segmented selector instead of a wheel picker.
-- A reset button in the navigation bar restores the default worksheet.
-- Parenting time uses a schedule-type picker based on the Georgia Parenting Plan day-count examples. Known schedules are mapped to noncustodial days; variable or unusual schedules show guidance instead of applying a guessed count.
-- Preexisting child support actually paid is shown as a statute note in the advanced parent section, not as an active amount field.
-
-## Error Handling
-
-Calculation errors should be typed and user-presentable:
-
-- Missing required input.
-- Invalid child count.
-- Combined adjusted gross income not greater than zero.
-- Table data missing or malformed.
-- Parenting time days outside expected range.
-- Expense or deviation amount below zero.
-
-Developer diagnostics should include the failing calculation step and table version.
+For income between rows, the app uses the nearest bracket per O.C.G.A. § 19-6-15(b)(4).
 
 ## Testing Strategy
 
-Use Swift Testing for domain and calculation tests in `Georgia Child Support CalculatorTests`.
+Unit tests use Swift Testing (`@Test`). UI tests use XCTest.
 
-Use XCTest UI tests in `Georgia Child Support CalculatorUITests` for end-to-end calculator flows.
-
-Calculation tests should use fixture inputs and assert intermediate values, not only final payment. This protects against regressions that accidentally cancel each other out.
-
-Golden fixtures should include:
-
-- Sharon and Henry from `docs/CALCULATION.md`, reconciled to the controlling 2026 statutory PDF table: custodial adjusted income $5,000, noncustodial adjusted income $6,000, combined income $11,000, pro rata shares 45.45 percent and 54.55 percent, two-child basic obligation $2,052, and noncustodial basic obligation about $1,119 before 2026 parenting time and additional adjustments. The simplified guide's older $1,877 example is treated as superseded by the 2026 PDF.
-- Exact statutory table row lookup.
-- Between-row nearest statutory table lookup.
-- Above $40,000 high-income cap behavior.
-- Low-income table cap behavior.
-- Parenting time adjustment with unequal court ordered days.
-- Social Security and VA credit scenarios where the credit partially offsets and fully satisfies the payment.
-- Production table verification fixtures extracted from the statutory PDF for both the Basic Child Support Obligation Table and the Low-Income Adjustment Table.
-
-UI tests should complete at least one valid happy path scenario and one validation path. Once visual design stabilizes, add screenshot regression coverage for the main input and result states.
-
-Recommended local verification command:
-
-```sh
-xcodebuild -scheme "Georgia Child Support Calculator" -project "Georgia Child Support Calculator.xcodeproj" -destination 'platform=iOS Simulator,name=iPhone 16' test
-```
-
-The exact simulator name may vary by installed Xcode runtime. CI should use an explicitly available simulator discovered by `xcrun simctl list devices available`.
+Key test areas:
+- Table lookups: exact rows, nearest-row matching, boundary behavior.
+- Calculator: Sharon/Henry golden fixture ($11,000 combined, $2,052 BCSO, ~$1,119 NCP payment).
+- Expense payer logic: CP-paid increases NCP obligation, NCP-paid decreases it.
+- Parenting time formula: adjustment reduces NCP obligation when NCP days < 182.5.
+- Low-income cap: confirmed against 2026 table values.
+- Overnight options: all 6 preset values map to correct day counts.
+- BallparkDraft: SET passthrough, nil-payer zeroing behavior.
+- Thomas Calculator: sum check (Non-Marital + Marital = CMV − SD), appreciation formula.
 
 ## Development Phases
 
-### Phase 1: Foundation
+### Completed
+- App foundation: Money, ParentRole, CalculationInput/Result, typed errors.
+- Full 2026 BCSO and low-income tables encoded and tested.
+- Core formula: adjusted income, combined income, pro-rata shares, BCSO lookup.
+- Parenting time adjustment (days^2.5 formula).
+- Expense allocation (payer-aware pro-rata model).
+- Low-income adjustment.
+- SS/VA benefit credits.
+- Payer determination (with CP-pays reversal).
+- Ballpark Child Support UI (Screen 1 + Screen 2 SET).
+- Thomas Calculator.
+- 6-tab app structure with coming-soon placeholders.
 
-- Remove the starter SwiftData item UI or quarantine it behind a placeholder. Completed.
-- Add `Money`, parent roles, calculation input/result types, and typed errors. Completed.
-- Add basic unit test files and fixture helpers. Completed.
-- Add versioned table-loading interfaces with small test tables. Completed.
-- Add the statutory table conversion workflow and PDF-derived verification fixtures. Completed for encoded 2026 table data and representative fixtures.
-
-### Phase 2: Core Formula
-
-- Implement gross income, adjusted income, combined income, pro rata shares, and basic obligation lookup. Completed.
-- Add the Sharon/Henry golden test and table lookup tests. Completed with the 2026 PDF value superseding the simplified guide's older example.
-- Enter or import the full 2026 Basic Child Support Obligation Table and verify converted values against the PDF-derived fixture. Completed.
-
-### Phase 3: 2026 Adjustments
-
-- Implement parenting time adjustment. Completed for known schedule-day inputs.
-- Implement additional expense allocation for health insurance and work related child care. Completed.
-- Implement future uninsured healthcare percentage output. Completed as pro rata shares.
-- Add regression tests for each formula. In progress; core paths are covered, broader UI and edge-case coverage remains future work.
-
-### Phase 4: Discretionary and Edge Rules
-
-- Implement deviations as user-entered adjustments with statutory categories. Partially completed as increase/decrease fields.
-- Implement low-income adjustment using the 2026 table. Completed.
-- Implement Social Security and VA child benefit credits. Completed.
-- Add payer determination tests, including negative noncustodial obligation behavior. Partially completed.
-
-### Phase 5: Calculator UI
-
-- Build the SwiftUI calculator flow. Completed as a single scrollable worksheet.
-- Add inline validation and result trace rendering. Result trace completed; field-level validation remains future work.
-- Add accessibility identifiers. Started for key controls and result values.
-- Add UI tests for launch, happy path, edit/recalculate, and validation. Launch smoke test started; broader flows remain future work.
-
-### Phase 6: Persistence and Polish
-
-- Consider local saved scenarios.
-- Consider comparison view for multiple scenarios.
-- Add exportable summary if needed.
-- Add screenshot regression tests after layouts settle.
+### Next
+- Detailed Child Support screen (manual overnight entry, deviations, full SET, SS/VA credits, low-income adjustment).
+- Parenting Time Visualizer.
+- Marital Balance Sheet.
+- Pension Calculator.
 
 ## Release Checklist
 
 - Unit tests pass for all calculation rules and table fixtures.
 - UI tests pass on a current iPhone simulator.
-- Table data has been checked against the statutory PDF or an official source.
-- Results screen includes disclaimer language.
-- Accessibility labels and Dynamic Type have been reviewed.
+- Table data verified against statutory PDF.
 - No calculation path depends on network access.
-- Privacy review confirms all scenario data remains local.
+- Privacy: all data stays local.
+- Accessibility labels and Dynamic Type reviewed.
