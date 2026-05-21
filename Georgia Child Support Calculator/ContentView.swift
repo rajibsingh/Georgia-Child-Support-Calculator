@@ -333,18 +333,7 @@ private struct ResultPanel: View {
                             .padding(.top, 2)
                     }
 
-                    VStack(spacing: 0) {
-                        ForEach(calc.trace) { step in
-                            ResultMetricRow(title: step.title, value: step.value)
-                        }
-                    }
-
-                    if let lia = calc.lowIncomeAdjustment {
-                        ResultMetricRow(
-                            title: "Low-income adjustment",
-                            value: "\(lia.originalAmount.formatted()) → \(lia.cappedAmount.formatted())"
-                        )
-                    }
+                    CalculationTracePanel(trace: calc.trace)
 
                     Text("If NCP Pays is negative, CP owes NCP that amount.")
                         .font(.footnote)
@@ -425,11 +414,7 @@ struct SETAdjustmentView: View {
                                             .font(.headline)
                                             .foregroundStyle(IntownColors.text)
                                     }
-                                    VStack(spacing: 0) {
-                                        ForEach(calc.trace) { step in
-                                            ResultMetricRow(title: step.title, value: step.value)
-                                        }
-                                    }
+                                    CalculationTracePanel(trace: calc.trace)
                                 }
                             case .failure(let error):
                                 Text(error.localizedDescription)
@@ -556,6 +541,98 @@ struct CurrencyField: View {
                 .keyboardType(.decimalPad)
                 .textFieldStyle(IntownTextFieldStyle())
                 .accessibilityIdentifier(label.replacingOccurrences(of: " ", with: "_"))
+        }
+    }
+}
+
+// MARK: - Calculation debug trace
+
+struct CalculationTracePanel: View {
+    var trace: [CalculationStep]
+    @State private var isExpanded = false
+
+    private var groups: [(name: String, steps: [CalculationStep])] {
+        var seen: [String] = []
+        var map: [String: [CalculationStep]] = [:]
+        for step in trace {
+            if map[step.group] == nil {
+                seen.append(step.group)
+                map[step.group] = []
+            }
+            map[step.group]!.append(step)
+        }
+        return seen.map { (name: $0, steps: map[$0]!) }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded.toggle()
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "ladybug")
+                        .font(.caption.weight(.medium))
+                    Text("Calculation Debug Trace")
+                        .font(.subheadline.weight(.medium))
+                    Spacer()
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption)
+                }
+                .foregroundStyle(IntownColors.secondaryText)
+                .padding(.vertical, 10)
+            }
+            .accessibilityIdentifier("debugTraceToggle")
+
+            if isExpanded {
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(groups, id: \.name) { group in
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(group.name)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(IntownColors.teal)
+                                .padding(.bottom, 4)
+                            ForEach(group.steps) { step in
+                                TraceStepRow(step: step)
+                            }
+                        }
+                    }
+                }
+                .padding(.bottom, 8)
+            }
+        }
+        .padding(.horizontal, 2)
+    }
+}
+
+private struct TraceStepRow: View {
+    var step: CalculationStep
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .firstTextBaseline) {
+                Text(step.title)
+                    .font(.caption)
+                    .foregroundStyle(IntownColors.text)
+                Spacer(minLength: 8)
+                Text(step.value)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(IntownColors.text)
+                    .multilineTextAlignment(.trailing)
+            }
+            .padding(.vertical, 7)
+
+            if let detail = step.detail {
+                Text(detail)
+                    .font(.caption2)
+                    .foregroundStyle(IntownColors.secondaryText)
+                    .padding(.bottom, 4)
+            }
+
+            Rectangle()
+                .fill(IntownColors.border.opacity(0.5))
+                .frame(height: 1)
         }
     }
 }

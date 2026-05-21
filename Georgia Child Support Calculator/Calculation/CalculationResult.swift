@@ -30,9 +30,11 @@ struct AppliedCredits: Equatable {
 }
 
 struct CalculationStep: Identifiable, Equatable {
-    var id: String { title }
+    var id: String { group + title }
+    var group: String
     var title: String
     var value: String
+    var detail: String?
 }
 
 enum CalculationError: LocalizedError, Equatable {

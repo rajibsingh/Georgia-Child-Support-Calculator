@@ -86,11 +86,23 @@ struct ChildSupportCalculator {
             finalMonthlyPayment: finalPayment,
             uninsuredHealthcareShares: ParentPair(custodial: custodialShare, noncustodial: noncustodialShare),
             trace: trace(
+                input: input,
+                adjustedCustodial: adjustedCustodial,
+                adjustedNoncustodial: adjustedNoncustodial,
                 lookup: lookup,
                 combined: combined,
                 custodialShare: custodialShare,
                 noncustodialShare: noncustodialShare,
+                custodialBasic: custodialBasic,
+                noncustodialBasic: noncustodialBasic,
                 parentingTimeAdjusted: parentingTimeAdjusted,
+                cpPaidExpenses: cpPaidExpenses,
+                ncpPaidExpenses: ncpPaidExpenses,
+                noncustodialAdditional: noncustodialAdditional,
+                deviationTotal: deviationTotal,
+                presumptive: presumptive,
+                lowIncomeAdjustment: lowIncomeAdjustment,
+                credits: credits,
                 finalPayment: finalPayment
             )
         )
@@ -150,22 +162,155 @@ struct ChildSupportCalculator {
     }
 
     private func trace(
+        input: CalculationInput,
+        adjustedCustodial: Money,
+        adjustedNoncustodial: Money,
         lookup: BasicObligationLookupResult,
         combined: Money,
         custodialShare: Decimal,
         noncustodialShare: Decimal,
+        custodialBasic: Money,
+        noncustodialBasic: Money,
         parentingTimeAdjusted: Money,
+        cpPaidExpenses: Money,
+        ncpPaidExpenses: Money,
+        noncustodialAdditional: Money,
+        deviationTotal: Money,
+        presumptive: Money,
+        lowIncomeAdjustment: AppliedLowIncomeAdjustment?,
+        credits: AppliedCredits,
         finalPayment: Money
     ) -> [CalculationStep] {
-        [
-            CalculationStep(title: "Combined adjusted income", value: combined.formatted()),
-            CalculationStep(title: "Table row used", value: lookup.matchedIncome.formatted()),
-            CalculationStep(title: "Basic obligation", value: lookup.obligation.formatted()),
-            CalculationStep(title: "Custodial share", value: percent(custodialShare)),
-            CalculationStep(title: "Noncustodial share", value: percent(noncustodialShare)),
-            CalculationStep(title: "Parenting-time adjusted amount", value: parentingTimeAdjusted.formatted()),
-            CalculationStep(title: "Estimated monthly payment", value: finalPayment.formatted())
-        ]
+        var steps: [CalculationStep] = []
+
+        func step(_ group: String, _ title: String, _ value: String, detail: String? = nil) {
+            steps.append(CalculationStep(group: group, title: title, value: value, detail: detail))
+        }
+
+        // Inputs
+        let g0 = "Inputs"
+        step(g0, "Children", "\(input.numberOfChildren)")
+        step(g0, "NCP gross monthly income", input.noncustodialParent.grossMonthlyIncome.formatted())
+        step(g0, "CP gross monthly income", input.custodialParent.grossMonthlyIncome.formatted())
+        if input.noncustodialParent.selfEmploymentMonthlyIncome.cents > 0 {
+            step(g0, "NCP self-employment income", input.noncustodialParent.selfEmploymentMonthlyIncome.formatted())
+        }
+        if input.custodialParent.selfEmploymentMonthlyIncome.cents > 0 {
+            step(g0, "CP self-employment income", input.custodialParent.selfEmploymentMonthlyIncome.formatted())
+        }
+        if input.noncustodialParent.qualifiedChildren > 0 {
+            step(g0, "NCP qualified other children", "\(input.noncustodialParent.qualifiedChildren)")
+        }
+        if input.custodialParent.qualifiedChildren > 0 {
+            step(g0, "CP qualified other children", "\(input.custodialParent.qualifiedChildren)")
+        }
+
+        // Adjusted incomes
+        let g1 = "Adjusted Gross Income"
+        let ncpSEDed = input.noncustodialParent.selfEmploymentMonthlyIncome * Decimal(string: "0.0765")!
+        let cpSEDed = input.custodialParent.selfEmploymentMonthlyIncome * Decimal(string: "0.0765")!
+        if ncpSEDed.cents > 0 {
+            step(g1, "NCP SE deduction (7.65%)", ncpSEDed.formatted(), detail: "½ of SE tax withheld from NCP self-employment income")
+        }
+        if cpSEDed.cents > 0 {
+            step(g1, "CP SE deduction (7.65%)", cpSEDed.formatted(), detail: "½ of SE tax withheld from CP self-employment income")
+        }
+        step(g1, "NCP adjusted gross income", adjustedNoncustodial.formatted(), detail: "Gross − SE deduction − theoretical support credit")
+        step(g1, "CP adjusted gross income", adjustedCustodial.formatted(), detail: "Gross − SE deduction − theoretical support credit")
+        step(g1, "Combined adjusted gross income", combined.formatted())
+
+        // Table lookup
+        let g2 = "Basic Child Support Obligation (BCSO)"
+        let matchNote: String
+        switch lookup.matchKind {
+        case .exact: matchNote = "exact match"
+        case .nearest: matchNote = "nearest row (interpolated)"
+        case .belowRange: matchNote = "below table range — using lowest row"
+        case .aboveRange: matchNote = "above table range — using highest row"
+        }
+        step(g2, "Requested combined income", lookup.requestedIncome.formatted())
+        step(g2, "Table row matched", lookup.matchedIncome.formatted(), detail: matchNote)
+        step(g2, "Combined BCSO from table", lookup.obligation.formatted(), detail: "Row obligation for \(input.numberOfChildren) child\(input.numberOfChildren == 1 ? "" : "ren")")
+
+        // Pro-rata shares
+        let g3 = "Pro-Rata Shares"
+        step(g3, "NCP pro-rata share", percent(noncustodialShare), detail: "NCP adjusted income ÷ combined adjusted income")
+        step(g3, "CP pro-rata share", percent(custodialShare), detail: "CP adjusted income ÷ combined adjusted income")
+        step(g3, "NCP basic obligation share", noncustodialBasic.formatted(), detail: "Combined BCSO × NCP share")
+        step(g3, "CP basic obligation share", custodialBasic.formatted(), detail: "Combined BCSO × CP share")
+
+        // Parenting time
+        let g4 = "Parenting-Time Adjustment"
+        if input.parentingTime.hasCourtOrderedParentingTime {
+            let ncpDays = input.parentingTime.noncustodialDays
+            let cpDays = input.parentingTime.custodialDays
+            step(g4, "NCP overnights", "\(ncpDays)")
+            step(g4, "CP overnights", "\(cpDays)")
+            step(g4, "Parenting-time adjusted amount", parentingTimeAdjusted.formatted(),
+                 detail: "Georgia non-linear formula: (NCP_days^2.5 × CP_share − CP_days^2.5 × NCP_share) ÷ (NCP^2.5 + CP^2.5) + NCP_basic")
+        } else {
+            step(g4, "Parenting-time adjustment", "None", detail: "No court-ordered parenting time; NCP pays full basic share")
+            step(g4, "NCP obligation after parenting time", parentingTimeAdjusted.formatted())
+        }
+
+        // Expenses
+        let g5 = "Additional Expenses"
+        if input.childcareAmount.cents > 0 {
+            step(g5, "Work-related childcare", input.childcareAmount.formatted(), detail: "Paid by \(input.childcarePayer.label)")
+        }
+        if input.healthInsuranceAmount.cents > 0 {
+            step(g5, "Child health insurance premium", input.healthInsuranceAmount.formatted(), detail: "Paid by \(input.healthInsurancePayer.label)")
+        }
+        if cpPaidExpenses.cents > 0 {
+            step(g5, "Total expenses paid by CP", cpPaidExpenses.formatted())
+            step(g5, "NCP's share of CP-paid expenses", (cpPaidExpenses * noncustodialShare).formatted(), detail: "CP-paid expenses × NCP share")
+        }
+        if ncpPaidExpenses.cents > 0 {
+            step(g5, "Total expenses paid by NCP", ncpPaidExpenses.formatted())
+            step(g5, "CP's share of NCP-paid expenses", (ncpPaidExpenses * custodialShare).formatted(), detail: "NCP-paid expenses × CP share")
+        }
+        if noncustodialAdditional.cents != 0 {
+            step(g5, "Net additional obligation (NCP)", noncustodialAdditional.formatted(),
+                 detail: "CP-paid expenses × NCP share − NCP-paid expenses × CP share")
+        }
+
+        // Deviations
+        if !input.deviations.isEmpty {
+            let g6 = "Deviations"
+            for dev in input.deviations {
+                let sign = dev.direction == .increase ? "+" : "−"
+                step(g6, dev.label.isEmpty ? "Deviation" : dev.label, "\(sign)\(dev.amount.formatted())")
+            }
+            step(g6, "Total deviation", deviationTotal.formatted())
+        }
+
+        // Presumptive
+        let g7 = "Presumptive Support"
+        step(g7, "Presumptive support amount", presumptive.formatted(),
+             detail: "Parenting-time amount + net additional expenses + deviations")
+
+        // Low-income adjustment
+        if let lia = lowIncomeAdjustment {
+            let g8 = "Low-Income Adjustment"
+            step(g8, "Unadjusted amount", lia.originalAmount.formatted())
+            step(g8, "Low-income cap", lia.cappedAmount.formatted(), detail: "NCP adjusted income falls within low-income table range")
+            step(g8, "Amount after cap", lia.cappedAmount.formatted())
+        }
+
+        // Credits
+        let g9 = "Credits & Final Amount"
+        if credits.socialSecurity.cents > 0 {
+            step(g9, "Social Security child benefit credit", credits.socialSecurity.formatted())
+        }
+        if credits.vaDisability.cents > 0 {
+            step(g9, "VA disability child benefit credit", credits.vaDisability.formatted())
+        }
+        if credits.total.cents > 0 {
+            step(g9, "Total credits", credits.total.formatted())
+        }
+        step(g9, "Final monthly payment", finalPayment.formatted())
+
+        return steps
     }
 }
 
