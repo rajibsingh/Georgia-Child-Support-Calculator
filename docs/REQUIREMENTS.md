@@ -4,122 +4,130 @@
 
 Build an iOS app branded for Andrea Knight | Intown Mediation LLC that gives Georgia family law attorneys fast, reliable back-of-the-envelope estimates for child support and property division. The app is designed for attorneys and mediators, not for litigants directly. Speed and ease of use are the primary values — the app must be faster and less cumbersome than the official Georgia calculator while covering the most common fact patterns.
 
-The app is named **Working Numbers for Georgia Family Attorneys**, published by **Andrea Knight Intown Mediation LLC**.
-
-The statute O.C.G.A. § 19-6-15, current through the 2025 Regular Session and reflected in `docs/O.C.G.A.-_-19-6-15_01.01.2026.pdf`, is the controlling source for all child support calculations.
+- **Full app name:** Working Numbers for Georgia Family Attorneys
+- **Short app name:** GAWorking
+- **Publisher:** Andrea Knight Intown Mediation LLC
+- **Statute reference:** O.C.G.A. § 19-6-15, current through 2025 Regular Session, effective 2026
 
 ## App Structure
 
-The app uses a tab-bar navigation with six modes:
+The app uses a tab bar with 6 icon-only tabs (no text labels):
 
-| Tab | Status | Description |
-|-----|--------|-------------|
-| Ballpark Child Support | Built | Quick estimate for typical cases |
-| Thomas Calculator | Built | Marital vs. non-marital asset share |
-| Detailed Child Support | Coming soon | Full calculation with manual inputs |
-| Parenting Time Visualizer | Coming soon | Schedule visualization tool |
-| Marital Balance Sheet | Coming soon | Full balance sheet tool |
-| Pension Calculator | Coming soon | Pension valuation tool |
+| # | Tab Name | Icon | Status |
+|---|----------|------|--------|
+| 1 | Child Support Ballparker | `baseball.circle.fill` | Built |
+| 2 | Detailed CS Estimate | `list.bullet.circle.fill` | Coming soon |
+| 3 | Parenting Time Visualizer | `calendar.circle` | Coming soon |
+| 4 | MP Equalizer | `equal.circle.fill` | Coming soon |
+| 5 | Thomas Calculator | `divide.circle.fill` | Built |
+| 6 | Pension Calculator | `function` | Coming soon |
 
-The tab bar shows Ballpark CS, Thomas Calc, Detailed CS, Parenting Time, and a More menu (which contains Marital Balance Sheet and Pension Calculator).
+## Welcome Screen
 
-## Ballpark Child Support
+Displayed every time the app opens. Auto-dismisses after 3 seconds or on tap.
+
+- Background color: #4782a0
+- Text color: white
+- Links not tappable
+- Content:
+  > Created by Andrea Knight
+  > Intown Mediation
+  > To schedule mediation:
+  > (404) 588-3000
+  > calendly.com/andreaknight
+
+## Screen Headers
+
+Each tab uses its own name as the header top line with a subheading below in smaller font. Tabs without built content have no subheading yet.
+
+| Tab | Header | Subheading |
+|-----|--------|------------|
+| 1 | Child Support Ballparker | Back-of-envelope child support estimator for experienced attorneys. Use Detailed CS Estimator for more nuance including self employment, low income and customized parenting time. |
+| 2 | Detailed CS Estimate | *(none until content is built)* |
+| 3 | Parenting Time Visualizer | *(none until content is built)* |
+| 4 | MP Equalizer | Calculate payment needed to equalize marital property. |
+| 5 | Thomas Calculator | For Mixed Property Assets |
+| 6 | Pension Calculator | *(none until content is built)* |
+
+## Ballpark Child Support (Tab 1)
 
 ### Purpose
 
-A single-screen quick estimate for the most common Georgia child support fact patterns. No disclaimers on the screen. Attorneys can enter a few numbers and get an instant ballpark. A "Proceed to Screen 2" button leads to SET and other adjustments.
+Quick estimate for the most common Georgia child support fact patterns. No disclaimers on the main screen beyond the note below the result. Attorneys reference Detailed CS Estimate for more complex scenarios.
 
 ### Parents
 
-Parents are always labeled **CP** (Custodial Parent) and **NCP** (Noncustodial Parent). No custom name entry. The result panel label flips dynamically between "NCP Pays" and "CP Pays" based on who owes.
+Always labeled **CP** (Custodial Parent) and **NCP** (Noncustodial Parent). No custom name entry. Result panel label flips dynamically between "NCP Pays" and "CP Pays."
 
-### Screen 1 Inputs (top to bottom)
+### Screen Inputs (top to bottom)
 
-1. **Number of children** — visible 1–6 selector, same visual weight as income fields, default 2, appears at the top of the screen.
-2. **NCP Monthly Gross** — currency text field.
-3. **CP Monthly Gross** — currency text field.
-4. **NCP Overnights** — menu picker with 6 preset values:
-   - No parenting-time adjustment
-   - 182.5 — 50/50 (week on/week off)
-   - 148 — 5 overnights/14 days, split summers
-   - 129.5 — Thu–Sun + off-Thu, week-on summer
-   - 123.5 — Thu–Sun + off-Thu, 2 summer weeks each
-   - 121 — 4 overnights/14 days, 3 summer weeks each
-   - 102 — 3 overnights/14 days, 2 summer weeks each
-5. **Work-related childcare** — currency text field + "Who pays?" menu (CP / NCP, no default — requires affirmative selection; contributes zero if no payer selected).
-6. **Child health insurance** — currency text field + "Who pays?" menu (same behavior).
+1. **Number of children** — visible 1–6 selector, same visual weight as income fields, default 2
+2. **NCP Monthly Gross** — currency text field
+3. **CP Monthly Gross** — currency text field
+4. **NCP Overnights** — menu picker, default label "Pick an option", 4 presets smallest to largest:
+   - 102 — 3 overnights every 2 weeks, 50/50 holidays, 2 summer weeks
+   - 121 — 4 overnights every 2 weeks, 50/50 holidays, 3 summer weeks
+   - 148 — 5 overnights every 2 weeks, 50/50 summers & holidays
+   - 182.5 — 50/50 parenting time
+5. **Work-related childcare** — currency text field + "Who pays?" menu (CP/NCP, no default)
+6. **Child health insurance** — currency text field + "Who pays?" menu (CP/NCP, no default)
 
-### Screen 1 Live Summary Boxes
+### Live Summary Boxes
 
-Three boxes at the top of the screen update as the attorney types:
-- **Combined BCSO** — the basic child support obligation from the statutory table for the combined income and child count.
-- **CP's Share** — CP's percentage of combined adjusted income.
-- **NCP's Share** — NCP's percentage of combined adjusted income.
+Three boxes update as attorney types:
+- **Combined BCSO** — basic child support obligation from statutory table
+- **CP's Share** — CP's percentage of combined adjusted income
+- **NCP's Share** — NCP's percentage of combined adjusted income
 
-All three show $0 / 0.0% / 0.0% when no income has been entered. They update to show one parent's 100% share when only one income is entered, and show accurate shares when both are entered.
+Show $0 / 0.0% / 0.0% when no income entered.
 
-### Screen 1 Result
+### Result Panel
 
-- Large dollar amount showing the monthly payment.
-- Dynamic label: "NCP Pays" or "CP Pays" depending on which parent owes.
-- Immediately below the amount: "Note: ignores SET, low-income adjustment, and other exceptions. Proceed to Screen 2 for more accurate results."
-- Calculation trace showing combined income, table row, basic obligation, pro rata shares, parenting-time adjusted amount, and estimated monthly payment.
-- Footnote: "If NCP Pays is negative, CP owes NCP that amount."
-- "Proceed to Screen 2 → SET & other adjustments" button.
-
-### Screen 2: SET Adjustment
-
-A sheet presented over Screen 1 when the attorney taps Proceed.
-
-Inputs:
-- NCP gross income subject to SET (text field)
-- CP gross income subject to SET (text field)
-
-The app deducts one-half of SE tax (7.65%) from each SET amount before calculating adjusted gross income. This is the same mechanism as the existing `selfEmploymentMonthlyIncome` deduction in the calculation engine.
-
-The screen shows the Screen 1 ballpark result for comparison, then the adjusted result with SET applied.
-
-A "Coming Soon" panel notes that low-income adjustment, SSI, Social Security Title II, and VA disability derivative benefit offsets will be added in a future version.
+- Dynamic label: "NCP Pays" or "CP Pays"
+- Final amount rounded to whole dollar only — all intermediate values shown in full decimal precision
+- Note text: "Simplified ballparker. Use Detailed CS Estimator for SET, low income, customized parenting time and other adjustments."
+- **"More Numbers"** — collapsible disclosure group showing intermediate calculation steps in smaller font:
+  - Combined gross income
+  - Combined BCSO
+  - CP's share BCSO
+  - NCP's share BCSO
+  - Parenting time adjustment (positive value)
+  - Estimated monthly support
+- No footnotes or Screen 2 references
 
 ### Expense Payer Logic
 
-For each expense (childcare, insurance), the attorney selects which parent pays. The NCP's net additional obligation is:
-
 ```
-NCP additional = (NCP pro-rata share × CP-paid expenses) − (CP pro-rata share × NCP-paid expenses)
+NCP additional = (NCP share × CP-paid expenses) − (CP share × NCP-paid expenses)
 ```
 
-If no payer is selected, the expense contributes zero to the calculation.
+No payer selected → expense contributes zero.
 
-### Terminology
+### Keyboard
 
-- "Guideline" appears only in the brand header narrative: "Back-of-the-envelope estimates for Georgia child support guidelines."
-- "Case" does not appear in any visible UI label.
-- Parents are CP and NCP throughout, not "custodial parent" / "noncustodial parent."
+- "Done" button above keyboard dismisses it
+- Tapping outside a field also dismisses
 
-### Out of Scope for Ballpark Screen
+### Terminology Rules
 
-- Preexisting child support actually paid (too factually intense; deferred permanently for this mode).
-- Deviations (available in Detailed Child Support, coming soon).
-- Social Security / VA benefit credits (Screen 2 placeholder; full build deferred to future version).
-- Low-income adjustment (same).
-- Manual overnight entry (available in Detailed Child Support, coming soon).
+- "Guideline" only in brand header narrative
+- "Case" not used anywhere in UI
+- No references to "Screen 2" — reference "Detailed CS Estimator" instead
 
-## Thomas Calculator
+## Thomas Calculator (Tab 5)
 
 ### Purpose
 
-Estimates the marital vs. non-marital share of an asset under the Thomas v. Thomas framework used in Georgia equitable division cases.
+Estimates marital vs. non-marital share of an asset under the Thomas v. Thomas framework.
 
-### Inputs
+### Inputs (in order)
 
-- Current Market Value (CMV)
-- Current Secured Debt (SD) — displayed in reference/check row, does not feed into share formulas directly
-- Asset's Value at Date of Marriage (V_DOM)
-- Secured Debt at Date of Marriage (SD_DOM)
-- Marital Contributions to Asset — e.g. principal portion of mortgage payments made during marriage (MC)
-
-Date of marriage is a reference field only; it does not affect the calculation.
+1. Date of Marriage — plain text field, reference only, does not affect calculation
+2. Current Market Value (CMV)
+3. Current Secured Debt (SD)
+4. Asset's Value at Date of Marriage (V_DOM)
+5. Secured Debt at Date of Marriage (SD_DOM)
+6. Marital Contributions to Asset (MC) — e.g. principal paid on mortgage during marriage
 
 ### Outputs
 
@@ -130,49 +138,61 @@ Estimated Non-Marital Value   = (V_DOM − SD_DOM) + Appreciation × (1 − Mari
 Estimated Marital Value       = MC + Appreciation × Marital Share Capital
 ```
 
-**Sanity check:** Estimated Non-Marital Value + Estimated Marital Value = CMV − SD (current net equity).
+**Check sum:** Non-Marital + Marital = CMV − SD (current net equity)
 
-The result panel displays the check sum so the attorney can confirm the outputs are internally consistent.
-
-The calculator shows no result until CMV and V_DOM are both entered and the equity at date of marriage (V_DOM − SD_DOM) is positive (required to avoid division by zero in Marital Share Capital).
+Results panel is always visible and updates live as inputs are entered. No result shown until CMV and V_DOM are entered and equity at DOM (V_DOM − SD_DOM) is positive.
 
 ## Future Modes (Coming Soon)
 
-### Detailed Child Support
+### Detailed CS Estimate (Tab 2)
 
-Will include everything in Ballpark plus:
-- Manual overnight entry for schedules not in the preset list
-- Deviations (increase/decrease with statutory categories)
-- Social Security Title II and VA disability child benefit credits
+Full child support calculation including:
+- Manual overnight entry
+- SET adjustment inline
+- Deviations
+- SS/VA benefit credits
 - Low-income adjustment
 - Other qualified children / theoretical support credit
-- Full SET adjustment inline on the main screen
 
-### Parenting Time Visualizer
+### MP Equalizer (Tab 4)
 
-Schedule visualization tool. Inputs and design TBD.
+Calculates payment needed to equalize marital property between spouses.
 
-### Marital Balance Sheet
+### Parenting Time Visualizer (Tab 3)
 
-Full marital vs. separate property balance sheet. Design TBD.
+Schedule visualization tool. Design TBD.
 
-### Pension Calculator
+### Pension Calculator (Tab 6)
 
 Pension valuation tool. Design TBD.
 
-## Data Requirements
+## BCSO Table Data
 
-The app shall store statutory tables as versioned, testable Swift data:
-- Basic Child Support Obligation Table from O.C.G.A. § 19-6-15(o) — 2026 version encoded.
-- Low-Income Adjustment Table from O.C.G.A. § 19-6-15(p) — 2026 version encoded.
+The full 2026 Basic Child Support Obligation Table must be re-encoded from the statute. A confirmed error exists at $16,000 combined income / 2 children ($2,728 in current app vs. $2,532 correct per official calculator). The entire table should be audited before shipping.
 
-All money calculations shall use `Decimal` or integer cents, never `Double` for final values. `Double` is permitted only inside the parenting-time exponent formula, with explicit conversion back.
+## Parenting Time Formula
+
+Uses the statutory days^2.5 formula per O.C.G.A. § 19-6-15(g)(ii)(B):
+
+```
+(i)   NCP days ^ 2.5
+(ii)  CP days ^ 2.5
+(iii) (i) × CP share of BCSO
+(iv)  (ii) × NCP share of BCSO
+(v)   (iii) − (iv)
+(vi)  (v) ÷ [(i) + (ii)]  → parenting time adjustment
+(vii) NCP BCSO share − parenting time adjustment → NCP pays
+```
+
+Formula only applies when a parenting schedule is selected. At zero or no selected overnights, NCP pays their full pro-rata BCSO share.
+
+Formula verified against official Georgia calculator: $10,000 NCP / $6,000 CP / 148 overnights / 2 children produces $702.72 parenting time adjustment and $880 final support.
 
 ## Nonfunctional Requirements
 
-- Runs fully on device, no network required.
-- All user-entered data stays local.
-- Native iOS fonts, SwiftUI controls, Dynamic Type, VoiceOver labels.
-- Currency and percentages formatted with U.S. locale.
-- Calculation is deterministic: same inputs and table version always produce the same result.
-- Target users are attorneys aged 40+. Font sizes and touch targets should be generous.
+- Runs fully on device, no network required
+- All user data stays local
+- Native iOS fonts, Dynamic Type, VoiceOver labels
+- Target users are attorneys 40+: generous font sizes and touch targets
+- Calculation is deterministic: same inputs always produce same result
+- All intermediate values in full decimal precision; round to whole dollar only in final output
