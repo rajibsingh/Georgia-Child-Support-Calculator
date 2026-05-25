@@ -4,13 +4,14 @@ import SwiftUI
 
 struct ThomasCalculatorView: View {
     @State private var draft = ThomasDraft()
+    @FocusState private var focusedField: Bool
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    ThomasHeader()
-                    ThomasInputsPanel(draft: $draft)
+                    TabHeader(title: "Thomas Calculator", subtitle: "Estimates marital vs. non-marital share of an asset.")
+                    ThomasInputsPanel(draft: $draft, focusedField: $focusedField)
                     if let result = draft.result {
                         ThomasResultPanel(result: result)
                     }
@@ -21,7 +22,11 @@ struct ThomasCalculatorView: View {
             .background(IntownColors.background.ignoresSafeArea())
             .navigationTitle("Working Numbers")
             .navigationBarTitleDisplayMode(.inline)
+            .onTapGesture { focusedField = false }
             .toolbar {
+                ToolbarItem(placement: .keyboard) {
+                    Button("Done") { focusedField = false }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         draft = ThomasDraft()
@@ -34,43 +39,28 @@ struct ThomasCalculatorView: View {
     }
 }
 
-private struct ThomasHeader: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Thomas Calculator")
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(IntownColors.teal)
-                .accessibilityAddTraits(.isHeader)
-            Text("Estimates marital vs. non-marital share of an asset.")
-                .font(.footnote)
-                .foregroundStyle(IntownColors.secondaryText)
-            Rectangle()
-                .fill(IntownColors.teal)
-                .frame(height: 2)
-                .padding(.top, 4)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(IntownColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-    }
-}
-
 // MARK: - Inputs
 
 private struct ThomasInputsPanel: View {
     @Binding var draft: ThomasDraft
+    var focusedField: FocusState<Bool>.Binding
 
     var body: some View {
         CalculatorPanel("Asset Details") {
-            CurrencyField(label: "Current Market Value", text: $draft.currentMarketValue)
-            CurrencyField(label: "Current Secured Debt (e.g. mortgage balance)", text: $draft.currentSecuredDebt)
-            CurrencyField(label: "Asset's Value at Date of Marriage", text: $draft.valueAtDOM)
-            CurrencyField(label: "Secured Debt at Date of Marriage", text: $draft.securedDebtAtDOM)
-            CurrencyField(label: "Marital Contributions to Asset (e.g. principal paid)", text: $draft.maritalContributions)
-            Text("Date of marriage is for reference only — enter dollar amounts above for the calculation.")
-                .font(.footnote)
-                .foregroundStyle(IntownColors.secondaryText)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Date of Marriage")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(IntownColors.text)
+                TextField("e.g. January 15, 2005", text: $draft.dateOfMarriage)
+                    .textFieldStyle(IntownTextFieldStyle())
+                    .focused(focusedField)
+                    .autocorrectionDisabled()
+            }
+            CurrencyField(label: "Current Market Value", text: $draft.currentMarketValue, focused: focusedField)
+            CurrencyField(label: "Current Secured Debt (e.g. mortgage balance)", text: $draft.currentSecuredDebt, focused: focusedField)
+            CurrencyField(label: "Asset's Value at Date of Marriage", text: $draft.valueAtDOM, focused: focusedField)
+            CurrencyField(label: "Secured Debt at Date of Marriage", text: $draft.securedDebtAtDOM, focused: focusedField)
+            CurrencyField(label: "Marital Contributions to Asset (e.g. principal paid)", text: $draft.maritalContributions, focused: focusedField)
         }
     }
 }
@@ -126,6 +116,7 @@ private struct ThomasResultPanel: View {
 // MARK: - Draft & calculation model
 
 struct ThomasDraft: Equatable {
+    var dateOfMarriage = ""
     var currentMarketValue = ""
     var currentSecuredDebt = ""
     var valueAtDOM = ""

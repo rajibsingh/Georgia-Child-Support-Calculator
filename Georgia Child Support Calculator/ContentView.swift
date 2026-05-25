@@ -1,76 +1,73 @@
 import SwiftUI
 
-// MARK: - Ballpark Child Support (Screen 1)
+// MARK: - Ballpark Child Support
 
 struct BallparkChildSupportView: View {
     @State private var draft = BallparkDraft()
-    @State private var showScreen2 = false
+    @State private var result: Result<CalculationResult, Error>? = nil
+    @State private var debounceTask: Task<Void, Never>? = nil
+    @FocusState private var focusedField: Bool
     private let calculator = ChildSupportCalculator()
-
-    private var result: Result<CalculationResult, Error>? {
-        guard draft.hasAnyIncome else { return nil }
-        return Result { try calculator.calculate(draft.input) }
-    }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 16) {
-                    BrandHeader()
+                    TabHeader(
+                        title: "Child Support Ballparker",
+                        subtitle: "Back-of-envelope child support estimator for experienced attorneys. Use Detailed CS Estimator for more nuance including self employment, low income and customized parenting time."
+                    )
                     SummaryBoxRow(result: result)
                     ChildCountPanel(count: $draft.numberOfChildren)
-                    IncomePanel(draft: $draft)
+                    IncomePanel(draft: $draft, focusedField: $focusedField)
                     ParentingTimePanel(overnightOption: $draft.overnightOption)
-                    ExpensesPanel(draft: $draft)
-                    ResultPanel(result: result, onProceed: { showScreen2 = true })
+                    ExpensesPanel(draft: $draft, focusedField: $focusedField)
+                    ResultPanel(result: result)
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 18)
             }
             .background(IntownColors.background.ignoresSafeArea())
-            .navigationTitle("Working Numbers")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         draft = BallparkDraft()
+                        focusedField = false
                     } label: {
                         Label("Reset", systemImage: "arrow.counterclockwise")
                     }
                     .accessibilityIdentifier("resetButton")
                 }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Done") {
+                        focusedField = false
+                    }
+                }
+            }
+            // Tap anywhere outside a field to dismiss keyboard
+            .onTapGesture {
+                focusedField = false
             }
         }
-        .sheet(isPresented: $showScreen2) {
-            SETAdjustmentView(ballparkResult: result, draft: $draft)
+        .tint(IntownColors.teal)
+        .onChange(of: draft) { scheduleRecalculate() }
+        .onAppear { recalculate() }
+    }
+
+    private func scheduleRecalculate() {
+        debounceTask?.cancel()
+        debounceTask = Task {
+            try? await Task.sleep(for: .milliseconds(300))
+            guard !Task.isCancelled else { return }
+            await MainActor.run { recalculate() }
         }
     }
-}
 
-// MARK: - Brand header
-
-struct BrandHeader: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Working Numbers")
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(IntownColors.teal)
-                .accessibilityAddTraits(.isHeader)
-            Text("for Georgia Family Attorneys")
-                .font(.system(size: 16, weight: .regular))
-                .foregroundStyle(IntownColors.teal)
-            Text("Back-of-the-envelope estimates for Georgia child support guidelines.")
-                .font(.footnote)
-                .foregroundStyle(IntownColors.secondaryText)
-            Rectangle()
-                .fill(IntownColors.teal)
-                .frame(height: 2)
-                .padding(.top, 4)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(IntownColors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+    private func recalculate() {
+        guard draft.hasAnyIncome else { result = nil; return }
+        result = Result { try calculator.calculate(draft.input) }
     }
 }
 
@@ -169,11 +166,12 @@ private struct ChildCountPanel: View {
 
 private struct IncomePanel: View {
     @Binding var draft: BallparkDraft
+    var focusedField: FocusState<Bool>.Binding
 
     var body: some View {
         CalculatorPanel("Monthly Gross Income") {
-            CurrencyField(label: "NCP Monthly Gross", text: $draft.ncpGrossIncome)
-            CurrencyField(label: "CP Monthly Gross", text: $draft.cpGrossIncome)
+            CurrencyField(label: "NCP Monthly Gross", text: $draft.ncpGrossIncome, focused: focusedField)
+            CurrencyField(label: "CP Monthly Gross", text: $draft.cpGrossIncome, focused: focusedField)
         }
     }
 }
@@ -182,36 +180,30 @@ private struct IncomePanel: View {
 
 enum OvernightOption: String, CaseIterable, Identifiable, Equatable {
     case none
-    case split182
-    case schedule148
-    case schedule129
-    case schedule123
-    case schedule121
     case schedule102
+    case schedule121
+    case schedule148
+    case split182
 
     var id: String { rawValue }
 
     var overnights: Decimal? {
         switch self {
-        case .none:         return nil
-        case .split182:     return Decimal(string: "182.5")!
-        case .schedule148:  return Decimal(148)
-        case .schedule129:  return Decimal(string: "129.5")!
-        case .schedule123:  return Decimal(string: "123.5")!
-        case .schedule121:  return Decimal(121)
-        case .schedule102:  return Decimal(102)
+        case .none:          return nil
+        case .schedule102:   return Decimal(102)
+        case .schedule121:   return Decimal(121)
+        case .schedule148:   return Decimal(148)
+        case .split182:      return Decimal(string: "182.5")!
         }
     }
 
     var label: String {
         switch self {
-        case .none:         return "No parenting-time adjustment"
-        case .split182:     return "182.5 — 50/50 (week on/week off)"
-        case .schedule148:  return "148 — 5 overnights/14 days, split summers"
-        case .schedule129:  return "129.5 — Thu–Sun + off-Thu, week-on summer"
-        case .schedule123:  return "123.5 — Thu–Sun + off-Thu, 2 summer weeks each"
-        case .schedule121:  return "121 — 4 overnights/14 days, 3 summer weeks each"
-        case .schedule102:  return "102 — 3 overnights/14 days, 2 summer weeks each"
+        case .none:          return "Pick an option"
+        case .schedule102:   return "102 — 3 overnights every 2 weeks, 50/50 holidays, 2 summer weeks"
+        case .schedule121:   return "121 — 4 overnights every 2 weeks, 50/50 holidays, 3 summer weeks"
+        case .schedule148:   return "148 — 5 overnights every 2 weeks, 50/50 summers & holidays"
+        case .split182:      return "182.5 — 50/50 parenting time"
         }
     }
 }
@@ -240,19 +232,22 @@ private struct ParentingTimePanel: View {
 
 private struct ExpensesPanel: View {
     @Binding var draft: BallparkDraft
+    var focusedField: FocusState<Bool>.Binding
 
     var body: some View {
         CalculatorPanel("Childcare & Insurance") {
             ExpenseRow(
                 label: "Work-related childcare",
                 amount: $draft.childcareAmount,
-                payer: $draft.childcarePayer
+                payer: $draft.childcarePayer,
+                focused: focusedField
             )
             Divider()
             ExpenseRow(
                 label: "Child health insurance",
                 amount: $draft.healthInsuranceAmount,
-                payer: $draft.healthInsurancePayer
+                payer: $draft.healthInsurancePayer,
+                focused: focusedField
             )
         }
     }
@@ -262,40 +257,36 @@ private struct ExpenseRow: View {
     var label: String
     @Binding var amount: String
     @Binding var payer: ExpensePayer?
+    var focused: FocusState<Bool>.Binding
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(label)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(IntownColors.text)
-            HStack(spacing: 12) {
-                CurrencyField(label: label, text: $amount)
-                    .frame(maxWidth: .infinity)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Who pays?")
-                        .font(.caption.weight(.medium))
-                        .foregroundStyle(IntownColors.secondaryText)
-                    Menu {
-                        Button("CP") { payer = .cp }
-                        Button("NCP") { payer = .ncp }
-                        Button("Clear") { payer = nil }
-                    } label: {
-                        HStack(spacing: 4) {
-                            Text(payer?.label ?? "Select")
-                                .font(.subheadline)
-                                .foregroundStyle(payer == nil ? IntownColors.secondaryText : IntownColors.text)
-                            Image(systemName: "chevron.up.chevron.down")
-                                .font(.caption)
-                                .foregroundStyle(IntownColors.secondaryText)
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .background(IntownColors.surface)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 6)
-                                .stroke(IntownColors.border, lineWidth: 1)
-                        }
+        HStack(spacing: 12) {
+            CurrencyField(label: label, text: $amount, focused: focused)
+                .frame(maxWidth: .infinity)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Who pays?")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(IntownColors.secondaryText)
+                Menu {
+                    Button("CP") { payer = .cp }
+                    Button("NCP") { payer = .ncp }
+                    Button("Clear") { payer = nil }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(payer?.label ?? "Select")
+                            .font(.subheadline)
+                            .foregroundStyle(payer == nil ? IntownColors.secondaryText : IntownColors.text)
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.caption)
+                            .foregroundStyle(IntownColors.secondaryText)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .background(IntownColors.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(IntownColors.border, lineWidth: 1)
                     }
                 }
             }
@@ -307,7 +298,6 @@ private struct ExpenseRow: View {
 
 private struct ResultPanel: View {
     var result: Result<CalculationResult, Error>?
-    var onProceed: () -> Void
 
     var body: some View {
         CalculatorPanel(payerLabel) {
@@ -320,35 +310,30 @@ private struct ResultPanel: View {
             case .some(.success(let calc)):
                 VStack(alignment: .leading, spacing: 14) {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(calc.finalMonthlyPayment.formatted())
+                        // Final amount rounded to whole dollar only here
+                        Text("$\(calc.finalMonthlyPayment.wholeDollarsRounded)")
                             .font(.system(size: 44, weight: .semibold))
                             .foregroundStyle(IntownColors.teal)
                             .accessibilityIdentifier("finalPayment")
                         Text("\(calc.payer.label) pays monthly")
                             .font(.headline)
                             .foregroundStyle(IntownColors.text)
-                        Text("Note: ignores SET, low-income adjustment, and other exceptions. Proceed to Screen 2 for more accurate results.")
+                        Text("Simplified ballparker. Use Detailed CS Estimator for SET, low income, customized parenting time and other adjustments.")
                             .font(.subheadline)
                             .foregroundStyle(IntownColors.secondaryText)
                             .padding(.top, 2)
                     }
 
-                    CalculationTracePanel(trace: calc.trace)
+                    MoreNumbersPanel(calc: calc)
 
-                    Text("If NCP Pays is negative, CP owes NCP that amount.")
-                        .font(.footnote)
-                        .foregroundStyle(IntownColors.secondaryText)
-
-                    Button(action: onProceed) {
-                        Text("Proceed to Screen 2 → SET & other adjustments")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(Color.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(IntownColors.teal)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                    // Reference to Detailed CS — no Screen 2 button
+                    HStack {
+                        Image(systemName: "info.circle")
+                            .foregroundStyle(IntownColors.teal)
+                        Text("For SET and other adjustments, use the Detailed CS Estimator tab.")
+                            .font(.footnote)
+                            .foregroundStyle(IntownColors.secondaryText)
                     }
-                    .accessibilityIdentifier("proceedButton")
                 }
 
             case .some(.failure(let error)):
@@ -366,85 +351,75 @@ private struct ResultPanel: View {
     }
 }
 
-// MARK: - Screen 2: SET Adjustment
+// MARK: - More Numbers disclosure group
 
-struct SETAdjustmentView: View {
-    var ballparkResult: Result<CalculationResult, Error>?
-    @Binding var draft: BallparkDraft
-    @Environment(\.dismiss) private var dismiss
-    private let calculator = ChildSupportCalculator()
-
-    @State private var ncpSETIncome = ""
-    @State private var cpSETIncome = ""
-
-    private var adjustedResult: Result<CalculationResult, Error>? {
-        guard draft.hasAnyIncome else { return nil }
-        return Result { try calculator.calculate(draft.inputWithSET(ncpSET: ncpSETIncome.asMoney, cpSET: cpSETIncome.asMoney)) }
-    }
+private struct MoreNumbersPanel: View {
+    var calc: CalculationResult
+    @State private var isExpanded = false
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    if let ballpark = ballparkResult, case .success(let r) = ballpark {
-                        CalculatorPanel("Ballpark (Screen 1)") {
-                            ResultMetricRow(title: "Before SET adjustment", value: r.finalMonthlyPayment.formatted())
-                            ResultMetricRow(title: "Payer", value: r.payer.label)
-                        }
-                    }
-
-                    CalculatorPanel("Self-Employment Income") {
-                        CurrencyField(label: "NCP gross income subject to SET", text: $ncpSETIncome)
-                        CurrencyField(label: "CP gross income subject to SET", text: $cpSETIncome)
-                        Text("App deducts one-half of SE tax (7.65%) from the SET income entered above before calculating adjusted gross income.")
-                            .font(.footnote)
-                            .foregroundStyle(IntownColors.secondaryText)
-                    }
-
-                    if let adjusted = adjustedResult {
-                        CalculatorPanel(adjustedPayerLabel(from: adjusted)) {
-                            switch adjusted {
-                            case .success(let calc):
-                                VStack(alignment: .leading, spacing: 14) {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(calc.finalMonthlyPayment.formatted())
-                                            .font(.system(size: 44, weight: .semibold))
-                                            .foregroundStyle(IntownColors.teal)
-                                        Text("\(calc.payer.label) pays monthly")
-                                            .font(.headline)
-                                            .foregroundStyle(IntownColors.text)
-                                    }
-                                    CalculationTracePanel(trace: calc.trace)
-                                }
-                            case .failure(let error):
-                                Text(error.localizedDescription)
-                                    .foregroundStyle(IntownColors.error)
-                            }
-                        }
-                    }
-
-                    CalculatorPanel("Coming Soon") {
-                        Text("Low-income adjustment, SSI, Social Security Title II, and VA disability derivative benefit offsets will be added in a future version.")
-                            .font(.body)
-                            .foregroundStyle(IntownColors.secondaryText)
-                    }
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isExpanded.toggle()
                 }
-                .padding(16)
+            } label: {
+                HStack {
+                    Text("More Numbers")
+                        .font(.subheadline.weight(.medium))
+                    Spacer()
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption)
+                }
+                .foregroundStyle(IntownColors.teal)
+                .padding(.vertical, 10)
             }
-            .background(IntownColors.background.ignoresSafeArea())
-            .navigationTitle("SET & Adjustments")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Back") { dismiss() }
+            .accessibilityIdentifier("moreNumbersToggle")
+
+            if isExpanded {
+                VStack(spacing: 0) {
+                    TraceRow(title: "Combined gross income", value: calc.combinedAdjustedGrossIncome.formatted())
+                    TraceRow(title: "Combined BCSO", value: calc.tableLookup.obligation.formatted())
+                    TraceRow(title: "CP's share BCSO", value: calc.basicObligationShares.custodial.formatted())
+                    TraceRow(title: "NCP's share BCSO", value: calc.basicObligationShares.noncustodial.formatted())
+                    if calc.parentingTimeCredit.cents != 0 {
+                        TraceRow(
+                            title: "Parenting time adjustment",
+                            value: calc.parentingTimeCredit.formatted()
+                        )
+                    }
+                    TraceRow(
+                        title: "Estimated monthly support",
+                        value: "$\(calc.finalMonthlyPayment.wholeDollarsRounded)"
+                    )
                 }
+                .padding(.bottom, 6)
             }
         }
     }
+}
 
-    private func adjustedPayerLabel(from result: Result<CalculationResult, Error>) -> String {
-        guard case .success(let calc) = result else { return "NCP Pays" }
-        return "\(calc.payer.label) Pays (with SET)"
+private struct TraceRow: View {
+    var title: String
+    var value: String
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(IntownColors.text)
+            Spacer(minLength: 8)
+            Text(value)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(IntownColors.text)
+                .multilineTextAlignment(.trailing)
+        }
+        .padding(.vertical, 7)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(IntownColors.border.opacity(0.5))
+                .frame(height: 1)
+        }
     }
 }
 
@@ -531,6 +506,7 @@ struct CalculatorPanel<Content: View>: View {
 struct CurrencyField: View {
     var label: String
     @Binding var text: String
+    var focused: FocusState<Bool>.Binding
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -539,100 +515,9 @@ struct CurrencyField: View {
                 .foregroundStyle(IntownColors.text)
             TextField("0", text: $text)
                 .keyboardType(.decimalPad)
+                .focused(focused)
                 .textFieldStyle(IntownTextFieldStyle())
                 .accessibilityIdentifier(label.replacingOccurrences(of: " ", with: "_"))
-        }
-    }
-}
-
-// MARK: - Calculation debug trace
-
-struct CalculationTracePanel: View {
-    var trace: [CalculationStep]
-    @State private var isExpanded = false
-
-    private var groups: [(name: String, steps: [CalculationStep])] {
-        var seen: [String] = []
-        var map: [String: [CalculationStep]] = [:]
-        for step in trace {
-            if map[step.group] == nil {
-                seen.append(step.group)
-                map[step.group] = []
-            }
-            map[step.group]!.append(step)
-        }
-        return seen.map { (name: $0, steps: map[$0]!) }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isExpanded.toggle()
-                }
-            } label: {
-                HStack {
-                    Image(systemName: "ladybug")
-                        .font(.caption.weight(.medium))
-                    Text("Calculation Debug Trace")
-                        .font(.subheadline.weight(.medium))
-                    Spacer()
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.caption)
-                }
-                .foregroundStyle(IntownColors.secondaryText)
-                .padding(.vertical, 10)
-            }
-            .accessibilityIdentifier("debugTraceToggle")
-
-            if isExpanded {
-                VStack(alignment: .leading, spacing: 12) {
-                    ForEach(groups, id: \.name) { group in
-                        VStack(alignment: .leading, spacing: 0) {
-                            Text(group.name)
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(IntownColors.teal)
-                                .padding(.bottom, 4)
-                            ForEach(group.steps) { step in
-                                TraceStepRow(step: step)
-                            }
-                        }
-                    }
-                }
-                .padding(.bottom, 8)
-            }
-        }
-        .padding(.horizontal, 2)
-    }
-}
-
-private struct TraceStepRow: View {
-    var step: CalculationStep
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(step.title)
-                    .font(.caption)
-                    .foregroundStyle(IntownColors.text)
-                Spacer(minLength: 8)
-                Text(step.value)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(IntownColors.text)
-                    .multilineTextAlignment(.trailing)
-            }
-            .padding(.vertical, 7)
-
-            if let detail = step.detail {
-                Text(detail)
-                    .font(.caption2)
-                    .foregroundStyle(IntownColors.secondaryText)
-                    .padding(.bottom, 4)
-            }
-
-            Rectangle()
-                .fill(IntownColors.border.opacity(0.5))
-                .frame(height: 1)
         }
     }
 }

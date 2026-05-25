@@ -16,6 +16,12 @@ struct CalculationResult: Equatable {
     var finalMonthlyPayment: Money
     var uninsuredHealthcareShares: ParentPair<Decimal>
     var trace: [CalculationStep]
+
+    /// The absolute value of the parenting-time adjustment delta (positive number for display).
+    var parentingTimeCredit: Money {
+        let delta = parentingTimeAdjustedNoncustodialAmount - basicObligationShares.noncustodial
+        return delta.cents < 0 ? -delta : delta
+    }
 }
 
 struct AppliedLowIncomeAdjustment: Equatable {

@@ -3,64 +3,92 @@ import SwiftUI
 struct RootTabView: View {
     var body: some View {
         TabView {
-            Tab("Ballpark CS", systemImage: "dollarsign.circle") {
+            Tab("Child Support Ballparker", systemImage: "baseball.circle.fill") {
                 BallparkChildSupportView()
             }
-            Tab("Thomas Calc", systemImage: "house") {
-                ThomasCalculatorView()
+            Tab("Detailed CS Estimate", systemImage: "list.bullet.circle.fill") {
+                ComingSoonView(title: "Detailed CS Estimate")
             }
-            Tab("Detailed CS", systemImage: "list.bullet.rectangle") {
-                ComingSoonView(title: "Detailed Child Support")
-            }
-            Tab("Parenting Time", systemImage: "calendar") {
+            Tab("Parenting Time Visualizer", systemImage: "calendar.circle") {
                 ComingSoonView(title: "Parenting Time Visualizer")
             }
-            Tab("More", systemImage: "ellipsis.circle") {
-                MoreMenuView()
+            Tab("MP Equalizer", systemImage: "equal.circle.fill") {
+                ComingSoonView(title: "MP Equalizer", subtitle: "Calculate payment needed to equalize marital property.")
             }
+            Tab("Thomas Calculator", systemImage: "divide.circle.fill") {
+                ThomasCalculatorView()
+            }
+            Tab("Pension Calculator", systemImage: "function") {
+                ComingSoonView(title: "Pension Calculator")
+            }
+        }
+        .tabViewStyle(.automatic)
+        // Hide tab labels — icons only
+        .onAppear {
+            let appearance = UITabBarAppearance()
+            appearance.configureWithDefaultBackground()
+            UITabBar.appearance().standardAppearance = appearance
         }
         .tint(IntownColors.teal)
     }
 }
 
-/// Overflow menu for the two least-frequently-used coming-soon tools.
-struct MoreMenuView: View {
+struct ComingSoonView: View {
+    var title: String
+    var subtitle: String? = nil
+
     var body: some View {
         NavigationStack {
-            List {
-                NavigationLink("Marital Balance Sheet") {
-                    ComingSoonView(title: "Marital Balance Sheet")
+            ScrollView {
+                VStack(spacing: 16) {
+                    TabHeader(title: title, subtitle: subtitle)
+                    CalculatorPanel("Coming Soon") {
+                        VStack(spacing: 12) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 48))
+                                .foregroundStyle(IntownColors.teal)
+                            Text("This tool is under development.")
+                                .font(.body)
+                                .foregroundStyle(IntownColors.secondaryText)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                    }
                 }
-                NavigationLink("Pension Calculator") {
-                    ComingSoonView(title: "Pension Calculator")
-                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 18)
             }
-            .navigationTitle("More Tools")
+            .background(IntownColors.background.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
 
-struct ComingSoonView: View {
+/// Shared per-tab header: title line + optional subheading + teal rule.
+struct TabHeader: View {
     var title: String
+    var subtitle: String? = nil
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 16) {
-                Image(systemName: "clock")
-                    .font(.system(size: 48))
-                    .foregroundStyle(IntownColors.teal)
-                Text(title)
-                    .font(.title2.weight(.semibold))
-                    .foregroundStyle(IntownColors.text)
-                Text("Coming soon.")
-                    .font(.body)
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(IntownColors.teal)
+                .accessibilityAddTraits(.isHeader)
+            if let subtitle {
+                Text(subtitle)
+                    .font(.footnote)
                     .foregroundStyle(IntownColors.secondaryText)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(IntownColors.background.ignoresSafeArea())
-            .navigationTitle(title)
-            .navigationBarTitleDisplayMode(.inline)
+            Rectangle()
+                .fill(IntownColors.teal)
+                .frame(height: 2)
+                .padding(.top, 4)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(IntownColors.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
