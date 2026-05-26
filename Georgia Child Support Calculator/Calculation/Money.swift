@@ -33,19 +33,13 @@ struct Money: Equatable, Comparable, Hashable, Codable, Sendable {
     }
 
     func formatted() -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.maximumFractionDigits = 0
-        formatter.minimumFractionDigits = 0
-        return formatter.string(from: NSDecimalNumber(decimal: dollarsDecimal)) ?? "$\(wholeDollarsRounded)"
+        MoneyFormatters.currency.string(from: NSDecimalNumber(decimal: dollarsDecimal))
+            ?? "$\(wholeDollarsRounded)"
     }
 
     func formattedWithCents() -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.minimumFractionDigits = 2
-        formatter.maximumFractionDigits = 2
-        return formatter.string(from: NSDecimalNumber(decimal: dollarsDecimal)) ?? "$\(dollarsDecimal)"
+        MoneyFormatters.currencyWithCents.string(from: NSDecimalNumber(decimal: dollarsDecimal))
+            ?? "$\(dollarsDecimal)"
     }
 
     static func < (lhs: Money, rhs: Money) -> Bool {
@@ -64,13 +58,37 @@ struct Money: Equatable, Comparable, Hashable, Codable, Sendable {
         Money(cents: -value.cents)
     }
 
+    // Multiply cents directly to avoid an extra Decimal division round-trip (#5).
     static func * (lhs: Money, rhs: Decimal) -> Money {
-        Money(decimalDollars: lhs.dollarsDecimal * rhs)
+        var product = Decimal(lhs.cents) * rhs
+        var rounded = Decimal()
+        NSDecimalRound(&rounded, &product, 0, .plain)
+        return Money(cents: NSDecimalNumber(decimal: rounded).int64Value)
     }
 
     static func / (lhs: Money, rhs: Decimal) -> Money {
         guard rhs != 0 else { return .zero }
         return Money(decimalDollars: lhs.dollarsDecimal / rhs)
     }
+}
+
+// MARK: - Shared formatters (allocated once, reused forever — fix #1)
+
+private enum MoneyFormatters {
+    static let currency: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        f.maximumFractionDigits = 0
+        f.minimumFractionDigits = 0
+        return f
+    }()
+
+    static let currencyWithCents: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        f.minimumFractionDigits = 2
+        f.maximumFractionDigits = 2
+        return f
+    }()
 }
 

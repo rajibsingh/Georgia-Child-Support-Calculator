@@ -1,5 +1,17 @@
 import Foundation
 
+// MARK: - Calculation constants (fix #3 — defined once, no repeated string parsing)
+
+private enum CalculationConstants {
+    /// One-half of self-employment FICA rate used to compute the SE income deduction
+    /// per O.C.G.A. § 19-6-15(f)(1)(B).
+    static let selfEmploymentTaxRate: Decimal = Decimal(765) / Decimal(10_000)   // 0.0765
+
+    /// Fraction of a parent's basic obligation used as the theoretical support credit
+    /// for other qualified children per O.C.G.A. § 19-6-15(f)(4).
+    static let theoreticalSupportFraction: Decimal = Decimal(3) / Decimal(4)     // 0.75
+}
+
 struct ChildSupportCalculator {
     var obligationTable: ObligationTableProviding = BasicObligationTable()
     var lowIncomeTable: LowIncomeTableProviding = LowIncomeAdjustmentTable()
@@ -109,7 +121,7 @@ struct ChildSupportCalculator {
     }
 
     private func adjustedIncome(for parent: ParentInput, children: Int) -> Money {
-        let selfEmploymentDeduction = parent.selfEmploymentMonthlyIncome * Decimal(string: "0.0765")!
+        let selfEmploymentDeduction = parent.selfEmploymentMonthlyIncome * CalculationConstants.selfEmploymentTaxRate
         let theoretical = theoreticalSupportCredit(for: parent, children: children)
         let adjusted = parent.grossMonthlyIncome - selfEmploymentDeduction - theoretical
         return max(adjusted, .zero)
@@ -123,7 +135,7 @@ struct ChildSupportCalculator {
               ) else {
             return .zero
         }
-        return lookup.obligation * Decimal(string: "0.75")!
+        return lookup.obligation * CalculationConstants.theoreticalSupportFraction
     }
 
     private func parentingTimeAdjustedAmount(
@@ -210,8 +222,8 @@ struct ChildSupportCalculator {
 
         // Adjusted incomes
         let g1 = "Adjusted Gross Income"
-        let ncpSEDed = input.noncustodialParent.selfEmploymentMonthlyIncome * Decimal(string: "0.0765")!
-        let cpSEDed = input.custodialParent.selfEmploymentMonthlyIncome * Decimal(string: "0.0765")!
+        let ncpSEDed = input.noncustodialParent.selfEmploymentMonthlyIncome * CalculationConstants.selfEmploymentTaxRate
+        let cpSEDed = input.custodialParent.selfEmploymentMonthlyIncome * CalculationConstants.selfEmploymentTaxRate
         if ncpSEDed.cents > 0 {
             step(g1, "NCP SE deduction (7.65%)", ncpSEDed.formatted(), detail: "½ of SE tax withheld from NCP self-employment income")
         }
@@ -317,10 +329,15 @@ struct ChildSupportCalculator {
     }
 }
 
+// Shared percent formatter — allocated once (fix #1).
+private let percentFormatter: NumberFormatter = {
+    let f = NumberFormatter()
+    f.numberStyle = .percent
+    f.minimumFractionDigits = 1
+    f.maximumFractionDigits = 1
+    return f
+}()
+
 func percent(_ decimal: Decimal) -> String {
-    let formatter = NumberFormatter()
-    formatter.numberStyle = .percent
-    formatter.minimumFractionDigits = 1
-    formatter.maximumFractionDigits = 1
-    return formatter.string(from: NSDecimalNumber(decimal: decimal)) ?? "\(decimal)"
+    percentFormatter.string(from: NSDecimalNumber(decimal: decimal)) ?? "\(decimal)"
 }

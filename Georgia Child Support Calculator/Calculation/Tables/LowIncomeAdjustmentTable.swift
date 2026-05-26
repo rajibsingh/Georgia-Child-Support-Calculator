@@ -22,11 +22,22 @@ struct LowIncomeAdjustmentTable: LowIncomeTableProviding {
             return inputBasedCap(income: income, children: children)
         }
 
-        guard let row = rows.first(where: { income <= Money(dollars: $0.adjustedIncomeDollars) }),
-              let cap = row.capsDollars[children - 1] else {
+        // Binary search for the first row whose adjustedIncomeDollars >= income (fix #2).
+        // Rows are sorted ascending by adjustedIncomeDollars.
+        let requestedDollars = income.wholeDollarsRounded
+        var lo = 0
+        var hi = rows.count - 1
+        while lo < hi {
+            let mid = (lo + hi) / 2
+            if rows[mid].adjustedIncomeDollars < requestedDollars {
+                lo = mid + 1
+            } else {
+                hi = mid
+            }
+        }
+        guard lo < rows.count, let cap = rows[lo].capsDollars[children - 1] else {
             return nil
         }
-
         return Money(dollars: cap)
     }
 

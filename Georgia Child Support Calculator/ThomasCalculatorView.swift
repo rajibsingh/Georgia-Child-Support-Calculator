@@ -161,11 +161,8 @@ struct ThomasResult {
     var checkSum: Decimal
 
     var maritalShareCapitalFormatted: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .percent
-        formatter.minimumFractionDigits = 1
-        formatter.maximumFractionDigits = 1
-        return formatter.string(from: NSDecimalNumber(decimal: maritalShareCapital)) ?? "\(maritalShareCapital)"
+        ThomasFormatters.percent.string(from: NSDecimalNumber(decimal: maritalShareCapital))
+            ?? "\(maritalShareCapital)"
     }
 }
 
@@ -182,9 +179,25 @@ private extension String {
 
 private extension Decimal {
     var thomasFormatted: String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.maximumFractionDigits = 0
-        return formatter.string(from: NSDecimalNumber(decimal: self)) ?? "\(self)"
+        ThomasFormatters.currency.string(from: NSDecimalNumber(decimal: self)) ?? "\(self)"
     }
+}
+
+// MARK: - Shared formatters (allocated once — fix #1)
+
+private enum ThomasFormatters {
+    static let currency: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .currency
+        f.maximumFractionDigits = 0
+        return f
+    }()
+
+    static let percent: NumberFormatter = {
+        let f = NumberFormatter()
+        f.numberStyle = .percent
+        f.minimumFractionDigits = 1
+        f.maximumFractionDigits = 1
+        return f
+    }()
 }

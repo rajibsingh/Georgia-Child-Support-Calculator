@@ -35,24 +35,44 @@ struct BasicObligationTable: ObligationTableProviding {
             throw CalculationError.tableLookupFailed
         }
 
-        let requestedDollars = income.dollarsDecimal
+        // Work in whole dollars (rounded) so all comparisons are integer ops — no Decimal overhead.
+        let requestedDollars = income.wholeDollarsRounded
         let matched: BasicObligationRow
         let kind: TableMatchKind
 
-        if requestedDollars <= Decimal(first.combinedIncomeDollars) {
+        if requestedDollars <= first.combinedIncomeDollars {
             matched = first
-            kind = requestedDollars == Decimal(first.combinedIncomeDollars) ? .exact : .belowRange
-        } else if requestedDollars >= Decimal(last.combinedIncomeDollars) {
+            kind = requestedDollars == first.combinedIncomeDollars ? .exact : .belowRange
+        } else if requestedDollars >= last.combinedIncomeDollars {
             matched = last
-            kind = requestedDollars == Decimal(last.combinedIncomeDollars) ? .exact : .aboveRange
-        } else if let exact = rows.first(where: { Decimal($0.combinedIncomeDollars) == requestedDollars }) {
-            matched = exact
-            kind = .exact
+            kind = requestedDollars == last.combinedIncomeDollars ? .exact : .aboveRange
         } else {
-            matched = rows.min { lhs, rhs in
-                abs(Decimal(lhs.combinedIncomeDollars) - requestedDollars) < abs(Decimal(rhs.combinedIncomeDollars) - requestedDollars)
-            } ?? first
-            kind = .nearest
+            // Binary search: find the first row whose income >= requestedDollars (fix #2).
+            // Rows are sorted ascending by combinedIncomeDollars.
+            var lo = 0
+            var hi = rows.count - 1
+            while lo < hi {
+                let mid = (lo + hi) / 2
+                if rows[mid].combinedIncomeDollars < requestedDollars {
+                    lo = mid + 1
+                } else {
+                    hi = mid
+                }
+            }
+            // lo now points to the first row >= requestedDollars.
+            // Check exact hit first, then pick the closer of lo and lo-1.
+            if rows[lo].combinedIncomeDollars == requestedDollars {
+                matched = rows[lo]
+                kind = .exact
+            } else {
+                // lo > 0 guaranteed because we already handled the below-range case above.
+                let below = rows[lo - 1]
+                let above = rows[lo]
+                let distBelow = requestedDollars - below.combinedIncomeDollars
+                let distAbove = above.combinedIncomeDollars - requestedDollars
+                matched = distBelow <= distAbove ? below : above
+                kind = .nearest
+            }
         }
 
         return BasicObligationLookupResult(
