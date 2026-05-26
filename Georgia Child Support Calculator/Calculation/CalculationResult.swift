@@ -17,10 +17,10 @@ struct CalculationResult: Equatable {
     var uninsuredHealthcareShares: ParentPair<Decimal>
     var trace: [CalculationStep]
 
-    /// The absolute value of the parenting-time adjustment delta (positive number for display).
+    /// The parenting-time credit: how much was subtracted from NCP's BCSO share (positive number for display).
     var parentingTimeCredit: Money {
-        let delta = parentingTimeAdjustedNoncustodialAmount - basicObligationShares.noncustodial
-        return delta.cents < 0 ? -delta : delta
+        let credit = basicObligationShares.noncustodial - parentingTimeAdjustedNoncustodialAmount
+        return credit.cents > 0 ? credit : .zero
     }
 }
 

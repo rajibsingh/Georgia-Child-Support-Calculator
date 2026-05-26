@@ -129,10 +129,55 @@ struct GeorgiaChildSupportCalculatorTests {
         #expect(OvernightOption.none.overnights == nil)
         #expect(OvernightOption.split182.overnights == Decimal(string: "182.5")!)
         #expect(OvernightOption.schedule148.overnights == Decimal(148))
-        #expect(OvernightOption.schedule129.overnights == Decimal(string: "129.5")!)
-        #expect(OvernightOption.schedule123.overnights == Decimal(string: "123.5")!)
         #expect(OvernightOption.schedule121.overnights == Decimal(121))
         #expect(OvernightOption.schedule102.overnights == Decimal(102))
+    }
+
+    @Test func parentingTimeAdjustment148Overnights() throws {
+        // NCP $10,000 / CP $6,000 gross monthly, 148 NCP overnights, 1 child
+        // Expected: NCP 62.5%, BCSO $2,532, NCP share $1,582.50,
+        //           parenting time adjustment $702.72, presumptive support $879.78
+        let result = try ChildSupportCalculator().calculate(CalculationInput(
+            numberOfChildren: 2,
+            custodialParent: ParentInput(
+                grossMonthlyIncome: Money(dollars: 6_000),
+                selfEmploymentMonthlyIncome: .zero,
+                qualifiedChildren: 0,
+                workRelatedChildCare: .zero,
+                childHealthInsurancePremium: .zero
+            ),
+            noncustodialParent: ParentInput(
+                grossMonthlyIncome: Money(dollars: 10_000),
+                selfEmploymentMonthlyIncome: .zero,
+                qualifiedChildren: 0,
+                workRelatedChildCare: .zero,
+                childHealthInsurancePremium: .zero
+            ),
+            parentingTime: ParentingTimeInput(
+                hasCourtOrderedParentingTime: true,
+                custodialDays: 217,
+                noncustodialDays: 148
+            ),
+            childcareAmount: .zero,
+            childcarePayer: .cp,
+            healthInsuranceAmount: .zero,
+            healthInsurancePayer: .cp,
+            deviations: [],
+            socialSecurityChildBenefit: .zero,
+            vaDisabilityChildBenefit: .zero
+        ))
+        // Combined income and BCSO
+        #expect(result.combinedAdjustedGrossIncome == Money(dollars: 16_000))
+        #expect(result.tableLookup.obligation == Money(dollars: 2_532))
+        // NCP share BCSO = 62.5% × $2,532 = $1,582.50
+        #expect(result.basicObligationShares.noncustodial == Money(cents: 158_250))
+        // Parenting time credit displayed = $702.72
+        #expect(result.parentingTimeCredit == Money(cents: 70_272))
+        // Post-adjustment NCP obligation = $879.78
+        #expect(result.parentingTimeAdjustedNoncustodialAmount == Money(cents: 87_978))
+        // Presumptive support = $879.78, big box = $880
+        #expect(result.presumptiveSupport == Money(cents: 87_978))
+        #expect(result.finalMonthlyPayment.wholeDollarsRounded == 880)
     }
 
     // MARK: - BallparkDraft

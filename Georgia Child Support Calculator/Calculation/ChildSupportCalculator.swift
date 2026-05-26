@@ -156,11 +156,11 @@ struct ChildSupportCalculator {
 
         let termA = pow(noncustodialDays, 2.5) * NSDecimalNumber(decimal: custodialBasic.dollarsDecimal).doubleValue
         let termB = pow(custodialDays, 2.5) * NSDecimalNumber(decimal: noncustodialBasic.dollarsDecimal).doubleValue
-        // Per O.C.G.A. § 19-6-15(g)(2): the result of this formula IS the parenting time adjustment.
-        // NCP's obligation = NCP's BCSO share − parenting time adjustment.
-        let parentingTimeAdjustment = (termA - termB) / denominator
-        let adjusted = NSDecimalNumber(decimal: noncustodialBasic.dollarsDecimal).doubleValue - parentingTimeAdjustment
-        return Money(decimalDollars: Decimal(max(adjusted, 0)))
+        // Per O.C.G.A. § 19-6-15(g)(2): delta = (termA − termB) / denominator.
+        // Delta is negative when NCP has fewer overnights than CP; its negation is the
+        // post-adjustment NCP obligation (NCP's BCSO share minus the parenting-time credit).
+        let delta = (termA - termB) / denominator
+        return Money(decimalDollars: Decimal(max(-delta, 0)))
     }
 
     private func appliedLowIncomeAdjustment(
@@ -262,7 +262,7 @@ struct ChildSupportCalculator {
             step(g4, "NCP overnights", "\(ncpDays)")
             step(g4, "CP overnights", "\(cpDays)")
             step(g4, "Parenting-time adjusted amount", parentingTimeAdjusted.formatted(),
-                 detail: "Georgia non-linear formula: (NCP_days^2.5 × CP_share − CP_days^2.5 × NCP_share) ÷ (NCP^2.5 + CP^2.5) + NCP_basic")
+                 detail: "Georgia non-linear formula: −(NCP_days^2.5 × CP_basic − CP_days^2.5 × NCP_basic) ÷ (NCP^2.5 + CP^2.5)")
         } else {
             step(g4, "Parenting-time adjustment", "None", detail: "No court-ordered parenting time; NCP pays full basic share")
             step(g4, "NCP obligation after parenting time", parentingTimeAdjusted.formatted())
