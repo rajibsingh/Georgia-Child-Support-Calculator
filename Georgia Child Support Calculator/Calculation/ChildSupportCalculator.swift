@@ -144,8 +144,11 @@ struct ChildSupportCalculator {
 
         let termA = pow(noncustodialDays, 2.5) * NSDecimalNumber(decimal: custodialBasic.dollarsDecimal).doubleValue
         let termB = pow(custodialDays, 2.5) * NSDecimalNumber(decimal: noncustodialBasic.dollarsDecimal).doubleValue
-        let delta = (termA - termB) / denominator
-        return Money(decimalDollars: noncustodialBasic.dollarsDecimal + Decimal(delta))
+        // Per O.C.G.A. § 19-6-15(g)(2): the result of this formula IS the parenting time adjustment.
+        // NCP's obligation = NCP's BCSO share − parenting time adjustment.
+        let parentingTimeAdjustment = (termA - termB) / denominator
+        let adjusted = NSDecimalNumber(decimal: noncustodialBasic.dollarsDecimal).doubleValue - parentingTimeAdjustment
+        return Money(decimalDollars: Decimal(max(adjusted, 0)))
     }
 
     private func appliedLowIncomeAdjustment(

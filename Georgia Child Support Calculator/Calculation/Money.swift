@@ -40,6 +40,14 @@ struct Money: Equatable, Comparable, Hashable, Codable, Sendable {
         return formatter.string(from: NSDecimalNumber(decimal: dollarsDecimal)) ?? "$\(wholeDollarsRounded)"
     }
 
+    func formattedWithCents() -> String {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.minimumFractionDigits = 2
+        formatter.maximumFractionDigits = 2
+        return formatter.string(from: NSDecimalNumber(decimal: dollarsDecimal)) ?? "$\(dollarsDecimal)"
+    }
+
     static func < (lhs: Money, rhs: Money) -> Bool {
         lhs.cents < rhs.cents
     }

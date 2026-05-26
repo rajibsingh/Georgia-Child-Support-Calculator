@@ -379,18 +379,18 @@ private struct MoreNumbersPanel: View {
             if isExpanded {
                 VStack(spacing: 0) {
                     TraceRow(title: "Combined gross income", value: calc.combinedAdjustedGrossIncome.formatted())
-                    TraceRow(title: "Combined BCSO", value: calc.tableLookup.obligation.formatted())
-                    TraceRow(title: "CP's share BCSO", value: calc.basicObligationShares.custodial.formatted())
-                    TraceRow(title: "NCP's share BCSO", value: calc.basicObligationShares.noncustodial.formatted())
+                    TraceRow(title: "Combined BCSO", value: calc.tableLookup.obligation.formattedWithCents())
+                    TraceRow(title: "CP's share BCSO", value: calc.basicObligationShares.custodial.formattedWithCents())
+                    TraceRow(title: "NCP's share BCSO", value: calc.basicObligationShares.noncustodial.formattedWithCents())
                     if calc.parentingTimeCredit.cents != 0 {
                         TraceRow(
                             title: "Parenting time adjustment",
-                            value: calc.parentingTimeCredit.formatted()
+                            value: calc.parentingTimeCredit.formattedWithCents()
                         )
                     }
                     TraceRow(
                         title: "Estimated monthly support",
-                        value: "$\(calc.finalMonthlyPayment.wholeDollarsRounded)"
+                        value: calc.finalMonthlyPayment.formattedWithCents()
                     )
                 }
                 .padding(.bottom, 6)
