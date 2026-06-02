@@ -1,0 +1,38 @@
+{
+  "configurations" : [
+    {
+      "id" : "F7F533A0-E86B-481B-A31B-8BA96AE37AF1",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:Georgia Child Support Calculator.xcodeproj",
+      "identifier" : "893ADE442F9EDA2C00C7B13C",
+      "name" : "Georgia Child Support Calculator"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:Georgia Child Support Calculator.xcodeproj",
+        "identifier" : "893ADE532F9EDA2D00C7B13C",
+        "name" : "Georgia Child Support CalculatorTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:Georgia Child Support Calculator.xcodeproj",
+        "identifier" : "893ADE5D2F9EDA2D00C7B13C",
+        "name" : "Georgia Child Support CalculatorUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

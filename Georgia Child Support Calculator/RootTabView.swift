@@ -3,24 +3,30 @@ import SwiftUI
 struct RootTabView: View {
     var body: some View {
         TabView {
-            Tab("Child Support Ballparker", systemImage: "baseball.circle.fill") {
-                BallparkChildSupportView()
-            }
-            Tab("Detailed CS Estimate", systemImage: "list.bullet.circle.fill") {
-                ComingSoonView(title: "Detailed CS Estimate")
-            }
-            Tab("Parenting Time Visualizer", systemImage: "calendar.circle") {
-                ComingSoonView(title: "Parenting Time Visualizer")
-            }
-            Tab("MP Equalizer", systemImage: "equal.circle.fill") {
-                ComingSoonView(title: "MP Equalizer", subtitle: "Calculate payment needed to equalize marital property.")
-            }
-            Tab("Thomas Calculator", systemImage: "divide.circle.fill") {
-                ThomasCalculatorView()
-            }
-            Tab("Pension Calculator", systemImage: "function") {
-                ComingSoonView(title: "Pension Calculator")
-            }
+            BallparkChildSupportView()
+                .tabItem {
+                    Label("Child Support Ballparker", systemImage: "baseball.circle.fill")
+                }
+            ComingSoonView(title: "Detailed CS Estimate")
+                .tabItem {
+                    Label("Detailed CS Estimate", systemImage: "list.bullet.circle.fill")
+                }
+            ComingSoonView(title: "Parenting Time Visualizer")
+                .tabItem {
+                    Label("Parenting Time Visualizer", systemImage: "calendar.circle")
+                }
+            ComingSoonView(title: "MP Equalizer", subtitle: "Calculate payment needed to equalize marital property.")
+                .tabItem {
+                    Label("MP Equalizer", systemImage: "equal.circle.fill")
+                }
+            ThomasCalculatorView()
+                .tabItem {
+                    Label("Thomas Calculator", systemImage: "divide.circle.fill")
+                }
+            ComingSoonView(title: "Pension Calculator")
+                .tabItem {
+                    Label("Pension Calculator", systemImage: "function")
+                }
         }
         .tabViewStyle(.automatic)
         // Hide tab labels — icons only

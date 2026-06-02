@@ -24,6 +24,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		89374FAC2FCF0CFB00A5CC48 /* Georgia Child Support Calculator.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Georgia Child Support Calculator.xctestplan"; sourceTree = "<group>"; };
 		893ADE452F9EDA2C00C7B13C /* Georgia Child Support Calculator.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Georgia Child Support Calculator.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		893ADE542F9EDA2D00C7B13C /* Georgia Child Support CalculatorTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Georgia Child Support CalculatorTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		893ADE5E2F9EDA2D00C7B13C /* Georgia Child Support CalculatorUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Georgia Child Support CalculatorUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -75,6 +76,7 @@
 		893ADE3C2F9EDA2C00C7B13C = {
 			isa = PBXGroup;
 			children = (
+				89374FAC2FCF0CFB00A5CC48 /* Georgia Child Support Calculator.xctestplan */,
 				893ADE472F9EDA2C00C7B13C /* Georgia Child Support Calculator */,
 				893ADE572F9EDA2D00C7B13C /* Georgia Child Support CalculatorTests */,
 				893ADE612F9EDA2D00C7B13C /* Georgia Child Support CalculatorUITests */,
@@ -402,11 +404,14 @@
 				DEVELOPMENT_TEAM = 9J9T6457HV;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Working Numbers";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -434,11 +439,14 @@
 				DEVELOPMENT_TEAM = 9J9T6457HV;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Working Numbers";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
