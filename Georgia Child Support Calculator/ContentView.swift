@@ -15,7 +15,8 @@ struct BallparkChildSupportView: View {
                 VStack(spacing: 16) {
                     TabHeader(
                         title: "Child Support Ballparker",
-                        subtitle: "Back-of-envelope child support estimator for experienced attorneys. Use Detailed CS Estimator for more nuance including self employment, low income and customized parenting time."
+                        subtitle: "Back-of-envelope child support estimator for experienced attorneys. Use Detailed CS Estimator for more nuance including self employment, low income and customized parenting time.",
+                        showBetaBadge: true
                     )
                     SummaryBoxRow(result: result)
                     ChildCountPanel(count: $draft.numberOfChildren)

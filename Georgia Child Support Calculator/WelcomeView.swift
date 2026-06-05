@@ -56,6 +56,9 @@ struct WelcomeView: View {
 
                 Spacer()
 
+                BetaBadge(inverted: true)
+                    .padding(.bottom, 8)
+
                 Text("© 2026 Intown Mediation LLC")
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.5))

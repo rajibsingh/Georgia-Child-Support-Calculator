@@ -75,13 +75,19 @@ struct ComingSoonView: View {
 struct TabHeader: View {
     var title: String
     var subtitle: String? = nil
+    var showBetaBadge = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundStyle(IntownColors.teal)
-                .accessibilityAddTraits(.isHeader)
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Text(title)
+                    .font(.system(size: 22, weight: .semibold))
+                    .foregroundStyle(IntownColors.teal)
+                    .accessibilityAddTraits(.isHeader)
+                if showBetaBadge {
+                    BetaBadge()
+                }
+            }
             if let subtitle {
                 Text(subtitle)
                     .font(.footnote)
@@ -96,5 +102,20 @@ struct TabHeader: View {
         .padding(16)
         .background(IntownColors.surface)
         .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+struct BetaBadge: View {
+    var inverted = false
+
+    var body: some View {
+        Text("Free Beta · Feedback Welcome")
+            .font(.caption.weight(.medium))
+            .foregroundStyle(inverted ? Color.white : IntownColors.teal)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(inverted ? Color.white.opacity(0.15) : IntownColors.teal.opacity(0.1))
+            .clipShape(Capsule())
+            .overlay(Capsule().stroke(inverted ? Color.white.opacity(0.5) : IntownColors.teal.opacity(0.35), lineWidth: 1))
     }
 }
