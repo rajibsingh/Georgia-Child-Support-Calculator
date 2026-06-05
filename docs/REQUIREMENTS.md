@@ -24,17 +24,22 @@ The app uses a tab bar with 6 icon-only tabs (no text labels):
 
 ## Welcome Screen
 
-Displayed every time the app opens. Auto-dismisses after 3 seconds or on tap.
+Displayed every time the app opens. Fades in on appear. Auto-dismisses after 3.5 seconds or on tap (fades out).
 
-- Background color: #4782a0
-- Text color: white
+- Background color: `IntownColors.teal` (#006489)
+- Text color: white (varying opacity for hierarchy)
 - Links not tappable
-- Content:
-  > Created by Andrea Knight
-  > Intown Mediation
-  > To schedule mediation:
-  > (404) 588-3000
-  > calendly.com/andreaknight
+- Content (top to bottom):
+  - SF Symbol app icon (`scalemass.fill`, 56pt)
+  - App name: "Working Numbers"
+  - Subtitle: "Georgia Family Law Calculator"
+  - Divider
+  - "Created by" label
+  - "Andrea Knight"
+  - "Intown Mediation"
+  - "(404) 588-3000"
+  - "calendly.com/andreaknight"
+  - "Tap to continue" hint (bottom)
 
 ## Screen Headers
 
@@ -46,7 +51,7 @@ Each tab uses its own name as the header top line with a subheading below in sma
 | 2 | Detailed CS Estimate | *(none until content is built)* |
 | 3 | Parenting Time Visualizer | *(none until content is built)* |
 | 4 | MP Equalizer | Calculate payment needed to equalize marital property. |
-| 5 | Thomas Calculator | For Mixed Property Assets |
+| 5 | Thomas Calculator | Estimates marital vs. non-marital share of an asset. |
 | 6 | Pension Calculator | *(none until content is built)* |
 
 ## Ballpark Child Support (Tab 1)
@@ -86,14 +91,15 @@ Show $0 / 0.0% / 0.0% when no income entered.
 - Dynamic label: "NCP Pays" or "CP Pays"
 - Final amount rounded to whole dollar only — all intermediate values shown in full decimal precision
 - Note text: "Simplified ballparker. Use Detailed CS Estimator for SET, low income, customized parenting time and other adjustments."
+- Info row below note: "For SET and other adjustments, use the Detailed CS Estimator tab." (teal info icon, footnote text)
 - **"More Numbers"** — collapsible disclosure group showing intermediate calculation steps in smaller font:
   - Combined gross income
   - Combined BCSO
   - CP's share BCSO
   - NCP's share BCSO
-  - Parenting time adjustment (positive value)
+  - Parenting time adjustment (positive value, shown only when a schedule is selected)
   - Estimated monthly support
-- No footnotes or Screen 2 references
+- No Screen 2 button or Screen 2 references
 
 ### Expense Payer Logic
 

@@ -1,3 +1,6 @@
 .claude/settings.local.json
 .claude/worktrees/
 
+# Xcode simulator build archives (timestamped app bundle copies)
+Georgia Child Support Calculator 20*/
+

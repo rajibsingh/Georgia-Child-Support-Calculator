@@ -56,6 +56,11 @@ struct WelcomeView: View {
 
                 Spacer()
 
+                Text("© 2026 Intown Mediation LLC")
+                    .font(.caption)
+                    .foregroundStyle(.white.opacity(0.5))
+                    .padding(.bottom, 8)
+
                 Text("Tap to continue")
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.5))

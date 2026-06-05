@@ -112,25 +112,21 @@ NCP Pays                                [panel title, teal, title3 semibold]
 
 $1,119                                  [44pt semibold teal]
 NCP pays monthly                        [headline, dark gray]
-Note: ignores SET, low-income           [subheadline, secondary gray]
-adjustment, and other exceptions.
-Proceed to Screen 2 for more
-accurate results.
+Simplified ballparker. Use Detailed     [subheadline, secondary gray]
+CS Estimator for SET, low income,
+customized parenting time and other
+adjustments.
 
-─────────────────────────────────────
-Combined adjusted income    $11,000
-Table row used              $11,000
-Basic obligation            $2,052
-Custodial share             45.5%
-Noncustodial share          54.5%
-Parenting-time adjusted     $1,119
-Estimated monthly payment   $1,119
-─────────────────────────────────────
+▾ More Numbers                          [subheadline medium teal, chevron toggle]
+  Combined gross income    $11,000      [caption, dark gray]
+  Combined BCSO            $2,052.00
+  CP's share BCSO          $933.37
+  NCP's share BCSO         $1,118.63
+  Parenting time adjustment $xxx.xx     [only shown when schedule selected]
+  Estimated monthly support $1,118.63
 
-If NCP Pays is negative, CP owes      [footnote, gray]
-NCP that amount.
-
-[  Proceed to Screen 2 → SET...  ]    [teal filled button]
+ⓘ For SET and other adjustments,       [footnote, secondary gray, teal info icon]
+  use the Detailed CS Estimator tab.
 ```
 
 The result panel shows "Enter income above to see an estimate." when no income has been entered yet, rather than a $0 result.
@@ -151,10 +147,11 @@ Avoid pill-shaped buttons and heavy rounded rectangles.
 
 ## Coming Soon Screens
 
-Centered vertically:
-- `clock` SF Symbol, 48 pt, teal.
-- Screen name in title2 semibold, dark gray.
-- "Coming soon." in body, secondary gray.
+Uses the standard `CalculatorPanel` card layout within a scrollable tab:
+- `TabHeader` with the tab's name at top.
+- `CalculatorPanel("Coming Soon")` containing:
+  - `clock` SF Symbol, 48 pt, teal.
+  - "This tool is under development." in body, secondary gray.
 
 ## Accessibility
 
@@ -182,4 +179,4 @@ Current field labels and help text in use:
 | CP reversal note | If NCP Pays is negative, CP owes NCP that amount. |
 | Parenting time note | Variable or unusual work schedules (including airline flight schedules) may require a custom court-ordered count or deviation analysis. |
 | SET screen note | App deducts one-half of SE tax (7.65%) from the SET income entered above before calculating adjusted gross income. |
-| Coming soon note | …will be added in a future version. |
+| Coming soon note | This tool is under development. |

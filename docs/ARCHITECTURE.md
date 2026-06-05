@@ -16,7 +16,7 @@ The app launches into a welcome screen (3-second auto-dismiss), then a tab-bar r
 Georgia Child Support Calculator/
   Georgia_Child_Support_CalculatorApp.swift   — @main, launches WelcomeScreen then RootTabView
   RootTabView.swift                           — TabView root, ComingSoonView
-  WelcomeView.swift                           — 3-second splash, #4782a0 background
+  WelcomeView.swift                           — 3-second splash, IntownColors.teal (#006489) background
   ContentView.swift                           — BallparkChildSupportView, SETAdjustmentView (removed),
                                                 BallparkDraft, OvernightOption, shared UI components,
                                                 IntownColors, String.asMoney
@@ -59,7 +59,7 @@ The Xcode project uses `PBXFileSystemSynchronizedRootGroup` — new `.swift` fil
 
 ```
 App launch
-  → WelcomeView (3 seconds or tap to dismiss, #4782a0 background, white text)
+  → WelcomeView (3.5 seconds or tap to dismiss, IntownColors.teal background, white text, fade in/out)
   → RootTabView (6 icon-only tabs)
 ```
 
@@ -175,9 +175,10 @@ Verified: $10,000 NCP / $6,000 CP / 148 NCP overnights / 2 children → adjustme
 
 ### Welcome Screen (`WelcomeView`)
 
-- Background #4782a0, white text
-- Centered contact info for Andrea Knight / Intown Mediation
-- Auto-dismisses after 3 seconds or on tap
+- Background `IntownColors.teal` (#006489), white text
+- Fades in on appear; fades out on dismiss
+- App icon, app name, creator contact info for Andrea Knight / Intown Mediation
+- Auto-dismisses after 3.5 seconds or on tap
 - Presented modally over `RootTabView` on first render, removed from view hierarchy on dismiss
 
 ### Tab Bar Root (`RootTabView`)
@@ -212,7 +213,7 @@ Verified: $10,000 NCP / $6,000 CP / 148 NCP overnights / 2 children → adjustme
 - `ResultMetricRow` — label/value row with separator
 - `IntownTextFieldStyle` — consistent field styling
 - `IntownColors` — brand palette
-- `BrandHeader` — per-tab header with title and subheading
+- `TabHeader` — per-tab header with title and subheading
 - `SummaryBox` — live metric box
 
 ## Statutory Tables
@@ -231,16 +232,11 @@ protocol LowIncomeTableProviding {
 }
 ```
 
-## Known Bugs (to fix in next build)
-
-1. **Parenting time adjustment bug** — when a parenting schedule is selected, the app reports the parenting-time adjusted amount as the final child support rather than subtracting the adjustment from NCP's BCSO share.
-2. **Early rounding** — intermediate values are being rounded to whole dollars before the final output step.
-
 ## Development Phases
 
 ### Completed
 - App foundation, Money, ParentRole, typed errors
-- 2026 BCSO and low-income tables (BCSO needs re-audit)
+- 2026 BCSO and low-income tables (BCSO needs re-audit — see BCSO warning below)
 - Core formula: adjusted income, combined income, pro-rata, BCSO lookup
 - Parenting time adjustment (days^2.5, verified against official calculator)
 - Expense allocation (payer-aware pro-rata)
@@ -248,15 +244,13 @@ protocol LowIncomeTableProviding {
 - Ballpark Child Support UI
 - Thomas Calculator
 - 6-tab app structure with coming-soon placeholders
-
-### Next Build
-- Welcome screen
+- Welcome screen (IntownColors.teal bg, fade in/out, app icon + contact info)
 - App name / branding audit (full name + GAWorking short name)
 - Tab bar icon-only, 6 tabs in correct order
-- Ballpark tab: overnight picker reorder/relabel, remove Screen 2 references, "More Numbers" disclosure group, trace relabeling, keyboard dismiss
-- Thomas tab: Date of Marriage field, fix results display
-- Bug fixes: parenting time adjustment calculation, early rounding
-- BCSO table re-encode
+- Ballpark tab: overnight picker, "More Numbers" disclosure group, keyboard dismiss, no Screen 2 references
+- Thomas tab: Date of Marriage field, live results panel
+- Bug fix: parenting time adjustment calculation (subtracted from NCP BCSO share)
+- Bug fix: early rounding eliminated — intermediate values carry full precision
 
 ### Future
 - Detailed CS Estimate
