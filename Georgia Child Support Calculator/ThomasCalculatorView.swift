@@ -16,8 +16,7 @@ struct ThomasCalculatorView: View {
                         ThomasResultPanel(result: result)
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 18)
+                .contentWidth()
             }
             .background(IntownColors.background.ignoresSafeArea())
             .navigationTitle("Working Numbers")

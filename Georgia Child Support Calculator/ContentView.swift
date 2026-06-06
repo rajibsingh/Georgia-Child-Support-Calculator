@@ -25,8 +25,7 @@ struct BallparkChildSupportView: View {
                     ExpensesPanel(draft: $draft, focusedField: $focusedField)
                     ResultPanel(result: result)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 18)
+                .contentWidth()
             }
             .background(IntownColors.background.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)

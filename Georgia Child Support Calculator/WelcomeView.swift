@@ -71,6 +71,7 @@ struct WelcomeView: View {
             }
             .multilineTextAlignment(.center)
             .padding(.horizontal, 32)
+            .frame(maxWidth: contentMaxWidth)
         }
         .opacity(opacity)
         .onTapGesture {

@@ -1,40 +1,26 @@
 import SwiftUI
 
+// Maximum content width — keeps layouts readable on iPad without going full-width.
+let contentMaxWidth: CGFloat = 640
+
 struct RootTabView: View {
     var body: some View {
         TabView {
             BallparkChildSupportView()
-                .tabItem {
-                    Label("Child Support Ballparker", systemImage: "baseball.circle.fill")
-                }
+                .tabItem { Label("Child Support Ballparker", systemImage: "baseball.circle.fill") }
             ComingSoonView(title: "Detailed CS Estimate")
-                .tabItem {
-                    Label("Detailed CS Estimate", systemImage: "list.bullet.circle.fill")
-                }
+                .tabItem { Label("Detailed CS Estimate", systemImage: "list.bullet.circle.fill") }
             ComingSoonView(title: "Parenting Time Visualizer")
-                .tabItem {
-                    Label("Parenting Time Visualizer", systemImage: "calendar.circle")
-                }
+                .tabItem { Label("Parenting Time Visualizer", systemImage: "calendar.circle") }
             ComingSoonView(title: "MP Equalizer", subtitle: "Calculate payment needed to equalize marital property.")
-                .tabItem {
-                    Label("MP Equalizer", systemImage: "equal.circle.fill")
-                }
+                .tabItem { Label("MP Equalizer", systemImage: "equal.circle.fill") }
             ThomasCalculatorView()
-                .tabItem {
-                    Label("Thomas Calculator", systemImage: "divide.circle.fill")
-                }
+                .tabItem { Label("Thomas Calculator", systemImage: "divide.circle.fill") }
             ComingSoonView(title: "Pension Calculator")
-                .tabItem {
-                    Label("Pension Calculator", systemImage: "function")
-                }
+                .tabItem { Label("Pension Calculator", systemImage: "function") }
         }
+        // .automatic: bottom tab bar on iPhone, sidebar on iPad (iOS 18+)
         .tabViewStyle(.automatic)
-        // Hide tab labels — icons only
-        .onAppear {
-            let appearance = UITabBarAppearance()
-            appearance.configureWithDefaultBackground()
-            UITabBar.appearance().standardAppearance = appearance
-        }
         .tint(IntownColors.teal)
     }
 }
@@ -62,8 +48,7 @@ struct ComingSoonView: View {
                         .padding(.vertical, 16)
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 18)
+                .contentWidth()
             }
             .background(IntownColors.background.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
@@ -79,7 +64,7 @@ struct TabHeader: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
+            HStack(alignment: .center, spacing: 10) {
                 Text(title)
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundStyle(IntownColors.teal)
@@ -105,13 +90,27 @@ struct TabHeader: View {
     }
 }
 
+// MARK: - Content width modifier
+
+extension View {
+    /// Constrains content to `contentMaxWidth`, centered, with standard page margins.
+    func contentWidth() -> some View {
+        self
+            .padding(.horizontal, 16)
+            .padding(.vertical, 18)
+            .frame(maxWidth: contentMaxWidth)
+            .frame(maxWidth: .infinity)
+    }
+}
+
 struct BetaBadge: View {
     var inverted = false
 
     var body: some View {
-        Text("Free Beta · Feedback Welcome")
+        Text("Free Beta")
             .font(.caption.weight(.medium))
             .foregroundStyle(inverted ? Color.white : IntownColors.teal)
+            .lineLimit(1)
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
             .background(inverted ? Color.white.opacity(0.15) : IntownColors.teal.opacity(0.1))

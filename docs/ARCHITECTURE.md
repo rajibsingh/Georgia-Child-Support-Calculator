@@ -251,9 +251,11 @@ protocol LowIncomeTableProviding {
 - Thomas tab: Date of Marriage field, live results panel
 - Bug fix: parenting time adjustment calculation (subtracted from NCP BCSO share)
 - Bug fix: early rounding eliminated — intermediate values carry full precision
+- iPad support: content width cap (640 pt, via `.contentWidth()` modifier), `.automatic` tab style (sidebar on iPad), welcome screen width-capped
 
 ### Future
 - Detailed CS Estimate
 - MP Equalizer
 - Parenting Time Visualizer
 - Pension Calculator
+- **iPad two-column layout** — when `horizontalSizeClass == .regular` (iPad), show inputs panel on the left and results panel on the right side by side within each built tab. Requires `@Environment(\.horizontalSizeClass)` checks and restructuring the scroll/VStack hierarchy in `BallparkChildSupportView` and `ThomasCalculatorView`.
