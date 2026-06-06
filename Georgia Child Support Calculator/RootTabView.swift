@@ -60,7 +60,7 @@ struct ComingSoonView: View {
 struct TabHeader: View {
     var title: String
     var subtitle: String? = nil
-    var showBetaBadge = false
+    var showPreviewBadge = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -69,8 +69,8 @@ struct TabHeader: View {
                     .font(.system(size: 22, weight: .semibold))
                     .foregroundStyle(IntownColors.teal)
                     .accessibilityAddTraits(.isHeader)
-                if showBetaBadge {
-                    BetaBadge()
+                if showPreviewBadge {
+                    PreviewBadge()
                 }
             }
             if let subtitle {
@@ -103,11 +103,11 @@ extension View {
     }
 }
 
-struct BetaBadge: View {
+struct PreviewBadge: View {
     var inverted = false
 
     var body: some View {
-        Text("Free Beta")
+        Text("Preview")
             .font(.caption.weight(.medium))
             .foregroundStyle(inverted ? Color.white : IntownColors.teal)
             .lineLimit(1)
