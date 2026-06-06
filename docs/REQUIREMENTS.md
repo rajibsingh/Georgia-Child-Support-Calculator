@@ -174,7 +174,7 @@ Pension valuation tool. Design TBD.
 
 ## BCSO Table Data
 
-The full 2026 Basic Child Support Obligation Table must be re-encoded from the statute. A confirmed error exists at $16,000 combined income / 2 children ($2,728 in current app vs. $2,532 correct per official calculator). The entire table should be audited before shipping.
+The 2026 Basic Child Support Obligation Table is encoded in `BasicObligationTableData.swift` and has been audited. The previously flagged error ($2,728 vs. $2,532 at $16,000 / 2 children) does not exist — the value has been $2,532 since the initial commit and is correct per the official calculator. No table re-encoding is required.
 
 ## Parenting Time Formula
 
@@ -186,13 +186,15 @@ Uses the statutory days^2.5 formula per O.C.G.A. § 19-6-15(g)(ii)(B):
 (iii) (i) × CP share of BCSO
 (iv)  (ii) × NCP share of BCSO
 (v)   (iii) − (iv)
-(vi)  (v) ÷ [(i) + (ii)]  → parenting time adjustment
-(vii) NCP BCSO share − parenting time adjustment → NCP pays
+(vi)  (v) ÷ [(i) + (ii)]  → delta (negative when NCP has fewer overnights than CP)
+(vii) −(vi), clamped to ≥ 0       → NCP post-adjustment obligation (= what NCP pays)
 ```
+
+The **parenting time adjustment** shown in "More Numbers" = NCP BCSO share − (vii), always a positive display value.
 
 Formula only applies when a parenting schedule is selected. At zero or no selected overnights, NCP pays their full pro-rata BCSO share.
 
-Formula verified against official Georgia calculator: $10,000 NCP / $6,000 CP / 148 overnights / 2 children produces $702.72 parenting time adjustment and $880 final support.
+Formula verified against official Georgia calculator: $10,000 NCP / $6,000 CP / 148 overnights / 2 children → NCP BCSO $1,582.50, parenting time adjustment $702.72, NCP pays $879.78, rounds to **$880**.
 
 ## Nonfunctional Requirements
 

@@ -31,7 +31,7 @@ Georgia Child Support Calculator/
     ParentRole.swift                          — ParentRole enum (cp/ncp), ParentPair<T>
   Calculation/Tables/
     BasicObligationTable.swift                — ObligationTableProviding protocol + production impl
-    BasicObligationTableData.swift            — 2026 BCSO table (needs full re-audit and re-encode)
+    BasicObligationTableData.swift            — 2026 BCSO table (audited; values verified correct)
     LowIncomeAdjustmentTable.swift            — LowIncomeTableProviding protocol + production impl
     LowIncomeAdjustmentTableData.swift        — 2026 low-income table
     StatutoryTableVersion.swift               — Version metadata
@@ -145,7 +145,7 @@ struct ThomasResult {
 4. Compute combined adjusted gross income and pro-rata shares.
 5. Look up BCSO by nearest income bracket and child count.
 6. Calculate each parent's basic obligation share.
-7. Apply parenting-time adjustment (days^2.5 formula per O.C.G.A. § 19-6-15(g)(ii)(B)) when a schedule is selected. The **parenting time adjustment** is the delta (step vi of the statute), kept as a positive value for display. NCP pays = NCP BCSO − parenting time adjustment.
+7. Apply parenting-time adjustment (days^2.5 formula per O.C.G.A. § 19-6-15(g)(ii)(B)) when a schedule is selected. The formula delta is negative when NCP has fewer overnights than CP; its negation is the post-adjustment NCP obligation. The **parenting time adjustment** displayed = NCP BCSO share − post-adjustment obligation (always positive). NCP pays = post-adjustment obligation.
 8. Compute NCP's net additional expense obligation (payer-aware pro-rata).
 9. Apply deviations (zeroed in Ballpark).
 10. Apply low-income adjustment if applicable.
@@ -163,13 +163,13 @@ Per O.C.G.A. § 19-6-15(g)(ii)(B):
 (iii) (i) × CP BCSO share
 (iv)  (ii) × NCP BCSO share
 (v)   (iii) − (iv)
-(vi)  (v) ÷ [(i) + (ii)]          → parenting time adjustment (negative = credit to NCP)
-(vii) NCP BCSO share + (vi)        → NCP adjusted amount
+(vi)  (v) ÷ [(i) + (ii)]          → delta (negative when NCP has fewer overnights than CP)
+(vii) −(vi), clamped to ≥ 0       → post-adjustment NCP obligation
 ```
 
-Displayed in "More Numbers" as: **Parenting Time Adjustment** = abs(vi), positive value.
+Displayed in "More Numbers" as: **Parenting Time Adjustment** = NCP BCSO share − (vii), positive value.
 
-Verified: $10,000 NCP / $6,000 CP / 148 NCP overnights / 2 children → adjustment $879.78, NCP pays $702.72, rounds to **$703**.
+Verified: $10,000 NCP / $6,000 CP / 148 NCP overnights / 2 children → NCP BCSO share $1,582.50, parenting time adjustment $702.72, NCP pays $879.78, rounds to **$880**.
 
 ## UI Structure
 
@@ -218,7 +218,7 @@ Verified: $10,000 NCP / $6,000 CP / 148 NCP overnights / 2 children → adjustme
 
 ## Statutory Tables
 
-**⚠️ The BCSO table data has a confirmed error** at $16,000 combined income / 2 children ($2,728 in app vs. $2,532 correct). The full 2026 table must be re-encoded from `docs/O.C.G.A.-_-19-6-15_01.01.2026.pdf` before shipping.
+The BCSO table data has been audited. The previously flagged error ($2,728 vs. $2,532 at $16,000 / 2 children) does not exist in the codebase — the value has been $2,532 since the initial commit and is correct. The table is verified clean.
 
 Table protocols:
 
@@ -236,7 +236,7 @@ protocol LowIncomeTableProviding {
 
 ### Completed
 - App foundation, Money, ParentRole, typed errors
-- 2026 BCSO and low-income tables (BCSO needs re-audit — see BCSO warning below)
+- 2026 BCSO and low-income tables (audited and verified correct)
 - Core formula: adjusted income, combined income, pro-rata, BCSO lookup
 - Parenting time adjustment (days^2.5, verified against official calculator)
 - Expense allocation (payer-aware pro-rata)
@@ -249,7 +249,7 @@ protocol LowIncomeTableProviding {
 - Tab bar icon-only, 6 tabs in correct order
 - Ballpark tab: overnight picker, "More Numbers" disclosure group, keyboard dismiss, no Screen 2 references
 - Thomas tab: Date of Marriage field, live results panel
-- Bug fix: parenting time adjustment calculation (subtracted from NCP BCSO share)
+- Bug fix: parenting time adjustment formula (negate delta to get post-adjustment NCP obligation; verified $10k/$6k/148 overnights → $880)
 - Bug fix: early rounding eliminated — intermediate values carry full precision
 - iPad support: content width cap (640 pt, via `.contentWidth()` modifier), `.automatic` tab style (sidebar on iPad), welcome screen width-capped
 
