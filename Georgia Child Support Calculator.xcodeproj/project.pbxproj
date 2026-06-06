@@ -24,7 +24,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		89374FAC2FCF0CFB00A5CC48 /* Georgia Child Support Calculator.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Georgia Child Support Calculator.xctestplan"; sourceTree = "<group>"; };
+		89374FAC2FCF0CFB00A5CC48 /* Georgia Child Support Calculator.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Georgia Child Support Calculator.xctestplan"; sourceTree = "<group>"; };
 		893ADE452F9EDA2C00C7B13C /* Georgia Child Support Calculator.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Georgia Child Support Calculator.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		893ADE542F9EDA2D00C7B13C /* Georgia Child Support CalculatorTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Georgia Child Support CalculatorTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		893ADE5E2F9EDA2D00C7B13C /* Georgia Child Support CalculatorUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Georgia Child Support CalculatorUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -405,6 +405,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Working Numbers";
+				INFOPLIST_KEY_NSPrivacyPolicyURL = "https://www.sepoysoftware.com/working-numbers/privacy";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -437,9 +438,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 9J9T6457HV;
-				ENABLE_PREVIEWS = YES;
+				ENABLE_PREVIEWS = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Working Numbers";
+				INFOPLIST_KEY_NSPrivacyPolicyURL = "https://www.sepoysoftware.com/working-numbers/privacy";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.reference";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -472,7 +474,7 @@
 				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 9J9T6457HV;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.sepoysoftware.Georgia-Child-Support-CalculatorTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -494,7 +496,7 @@
 				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 9J9T6457HV;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.sepoysoftware.Georgia-Child-Support-CalculatorTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
