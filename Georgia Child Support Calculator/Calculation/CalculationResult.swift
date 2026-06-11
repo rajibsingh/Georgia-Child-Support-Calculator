@@ -8,6 +8,8 @@ struct CalculationResult: Equatable {
     var basicObligationShares: ParentPair<Money>
     var parentingTimeAdjustedNoncustodialAmount: Money
     var additionalExpenseShares: ParentPair<Money>
+    /// Raw Sch D expenses paid by each parent (childcare + health insurance), before pro-rata allocation.
+    var scheduleDExpenses: ParentPair<Money>
     var presumptiveSupport: Money
     var deviationTotal: Money
     var lowIncomeAdjustment: AppliedLowIncomeAdjustment?

@@ -90,6 +90,7 @@ struct ChildSupportCalculator {
             basicObligationShares: ParentPair(custodial: custodialBasic, noncustodial: noncustodialBasic),
             parentingTimeAdjustedNoncustodialAmount: parentingTimeAdjusted,
             additionalExpenseShares: ParentPair(custodial: custodialAdditional, noncustodial: noncustodialAdditional),
+            scheduleDExpenses: ParentPair(custodial: cpPaidExpenses, noncustodial: ncpPaidExpenses),
             presumptiveSupport: presumptive,
             deviationTotal: deviationTotal,
             lowIncomeAdjustment: lowIncomeAdjustment,

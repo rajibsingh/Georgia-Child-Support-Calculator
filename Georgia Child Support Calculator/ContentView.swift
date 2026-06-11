@@ -193,17 +193,29 @@ enum OvernightOption: String, CaseIterable, Identifiable, Equatable {
         case .schedule102:   return Decimal(102)
         case .schedule121:   return Decimal(121)
         case .schedule148:   return Decimal(148)
-        case .split182:      return Decimal(string: "182.5")!
+        case .split182:      return Decimal(182)
         }
     }
 
+    /// Full descriptive label shown inside the picker dropdown.
     var label: String {
         switch self {
         case .none:          return "Pick an option"
         case .schedule102:   return "102 — 3 overnights every 2 weeks, 50/50 holidays, 2 summer weeks"
         case .schedule121:   return "121 — 4 overnights every 2 weeks, 50/50 holidays, 3 summer weeks"
         case .schedule148:   return "148 — 5 overnights every 2 weeks, 50/50 summers & holidays"
-        case .split182:      return "182.5 — 50/50 parenting time"
+        case .split182:      return "182 — 50/50 parenting time"
+        }
+    }
+
+    /// Short label shown on the main screen once an option is selected.
+    var selectedLabel: String {
+        switch self {
+        case .none:          return "Pick an option"
+        case .schedule102:   return "102 overnights"
+        case .schedule121:   return "121 overnights"
+        case .schedule148:   return "148 overnights"
+        case .split182:      return "182 overnights (50/50)"
         }
     }
 }
@@ -213,12 +225,28 @@ private struct ParentingTimePanel: View {
 
     var body: some View {
         CalculatorPanel("NCP Overnights") {
-            Picker("NCP Overnights", selection: $overnightOption) {
+            Menu {
                 ForEach(OvernightOption.allCases) { option in
-                    Text(option.label).tag(option)
+                    Button(option.label) { overnightOption = option }
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Text(overnightOption.selectedLabel)
+                        .font(.subheadline)
+                        .foregroundStyle(overnightOption == .none ? IntownColors.secondaryText : IntownColors.text)
+                    Spacer()
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption)
+                        .foregroundStyle(IntownColors.secondaryText)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 11)
+                .background(IntownColors.surface)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(IntownColors.border, lineWidth: 1)
                 }
             }
-            .pickerStyle(.menu)
             .accessibilityIdentifier("overnightPicker")
 
             Text("Variable or unusual work schedules (including airline flight schedules) may require a custom court-ordered count or deviation analysis.")
@@ -318,7 +346,7 @@ private struct ResultPanel: View {
                         Text("\(calc.payer.label) pays monthly")
                             .font(.headline)
                             .foregroundStyle(IntownColors.text)
-                        Text("Simplified ballparker. Use Detailed CS Estimator for SET, low income, customized parenting time and other adjustments.")
+                        Text("NOTE: ballpark estimate.")
                             .font(.subheadline)
                             .foregroundStyle(IntownColors.secondaryText)
                             .padding(.top, 2)
@@ -330,7 +358,7 @@ private struct ResultPanel: View {
                     HStack {
                         Image(systemName: "info.circle")
                             .foregroundStyle(IntownColors.teal)
-                        Text("For SET and other adjustments, use the Detailed CS Estimator tab.")
+                        Text("Use CS Estimator for SET, low income, customized parenting time, etc.")
                             .font(.footnote)
                             .foregroundStyle(IntownColors.secondaryText)
                     }
@@ -386,6 +414,18 @@ private struct MoreNumbersPanel: View {
                         TraceRow(
                             title: "Parenting time adjustment",
                             value: calc.parentingTimeCredit.formattedWithCents()
+                        )
+                    }
+                    if calc.scheduleDExpenses.custodial.cents != 0 {
+                        TraceRow(
+                            title: "Sch D expenses paid by CP",
+                            value: calc.scheduleDExpenses.custodial.formattedWithCents()
+                        )
+                    }
+                    if calc.scheduleDExpenses.noncustodial.cents != 0 {
+                        TraceRow(
+                            title: "Sch D expenses paid by NCP",
+                            value: calc.scheduleDExpenses.noncustodial.formattedWithCents()
                         )
                     }
                     TraceRow(

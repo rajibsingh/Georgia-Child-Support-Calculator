@@ -7,13 +7,13 @@ struct RootTabView: View {
     var body: some View {
         TabView {
             BallparkChildSupportView()
-                .tabItem { Label("Child Support Ballparker", systemImage: "baseball.circle.fill") }
-            ComingSoonView(title: "Detailed CS Estimate")
-                .tabItem { Label("Detailed CS Estimate", systemImage: "list.bullet.circle.fill") }
+                .tabItem { Label("CS Ballpark", systemImage: "baseball.circle.fill") }
+            ComingSoonView(title: "Detailed CS Estimator")
+                .tabItem { Label("CS Estimator", systemImage: "list.bullet.circle.fill") }
             ComingSoonView(title: "Parenting Time Visualizer")
-                .tabItem { Label("Parenting Time Visualizer", systemImage: "calendar.circle") }
-            ComingSoonView(title: "MP Equalizer", subtitle: "Calculate payment needed to equalize marital property.")
-                .tabItem { Label("MP Equalizer", systemImage: "equal.circle.fill") }
+                .tabItem { Label("Visualizer", systemImage: "calendar.circle") }
+            ComingSoonView(title: "Marital Property Equalizer", subtitle: "Calculate payment needed to equalize marital property.")
+                .tabItem { Label("Equalizer", systemImage: "equal.circle.fill") }
             ThomasCalculatorView()
                 .tabItem { Label("Thomas Calculator", systemImage: "divide.circle.fill") }
             ComingSoonView(title: "Pension Calculator")
