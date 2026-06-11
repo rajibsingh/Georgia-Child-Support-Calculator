@@ -193,7 +193,7 @@ enum OvernightOption: String, CaseIterable, Identifiable, Equatable {
         case .schedule102:   return Decimal(102)
         case .schedule121:   return Decimal(121)
         case .schedule148:   return Decimal(148)
-        case .split182:      return Decimal(182)
+        case .split182:      return Decimal(string: "182.5")!
         }
     }
 
@@ -204,7 +204,7 @@ enum OvernightOption: String, CaseIterable, Identifiable, Equatable {
         case .schedule102:   return "102 — 3 overnights every 2 weeks, 50/50 holidays, 2 summer weeks"
         case .schedule121:   return "121 — 4 overnights every 2 weeks, 50/50 holidays, 3 summer weeks"
         case .schedule148:   return "148 — 5 overnights every 2 weeks, 50/50 summers & holidays"
-        case .split182:      return "182 — 50/50 parenting time"
+        case .split182:      return "182.5 — 50/50 parenting time"
         }
     }
 
@@ -215,7 +215,7 @@ enum OvernightOption: String, CaseIterable, Identifiable, Equatable {
         case .schedule102:   return "102 overnights"
         case .schedule121:   return "121 overnights"
         case .schedule148:   return "148 overnights"
-        case .split182:      return "182 overnights (50/50)"
+        case .split182:      return "182.5 overnights (50/50)"
         }
     }
 }

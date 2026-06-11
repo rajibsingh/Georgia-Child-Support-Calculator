@@ -73,9 +73,9 @@ Always labeled **CP** (Custodial Parent) and **NCP** (Noncustodial Parent). No c
    - 102 — 3 overnights every 2 weeks, 50/50 holidays, 2 summer weeks
    - 121 — 4 overnights every 2 weeks, 50/50 holidays, 3 summer weeks
    - 148 — 5 overnights every 2 weeks, 50/50 summers & holidays
-   - 182 — 50/50 parenting time *(matches Georgia state online calculator; previously 182.5)*
+   - 182.5 — 50/50 parenting time
 
-   The picker shows the full descriptive label in the dropdown menu. Once a selection is made the control displays a compact label (e.g., "148 overnights" or "182 overnights (50/50)") instead of the full text.
+   The picker shows the full descriptive label in the dropdown menu. Once a selection is made the control displays a compact label (e.g., "148 overnights" or "182.5 overnights (50/50)") instead of the full text.
 5. **Work-related childcare** — currency text field + "Who pays?" menu (CP/NCP, no default)
 6. **Child health insurance** — currency text field + "Who pays?" menu (CP/NCP, no default)
 

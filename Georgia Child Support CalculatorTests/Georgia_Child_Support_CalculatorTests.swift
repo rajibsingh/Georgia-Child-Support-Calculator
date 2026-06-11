@@ -127,7 +127,7 @@ struct GeorgiaChildSupportCalculatorTests {
 
     @Test func overnightOptionsMapsToExpectedDayCounts() {
         #expect(OvernightOption.none.overnights == nil)
-        #expect(OvernightOption.split182.overnights == Decimal(182))
+        #expect(OvernightOption.split182.overnights == Decimal(string: "182.5")!)
         #expect(OvernightOption.schedule148.overnights == Decimal(148))
         #expect(OvernightOption.schedule121.overnights == Decimal(121))
         #expect(OvernightOption.schedule102.overnights == Decimal(102))

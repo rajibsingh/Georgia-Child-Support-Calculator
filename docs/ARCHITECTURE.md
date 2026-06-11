@@ -110,14 +110,14 @@ enum OvernightOption: CaseIterable {
     case schedule102  // 102 overnights
     case schedule121  // 121 overnights
     case schedule148  // 148 overnights
-    case split182     // 182 overnights (50/50) — matches Georgia state online calculator
+    case split182     // 182.5 overnights (50/50)
 }
 ```
 
 `OvernightOption` has two display properties:
 
 - **`label`** — full descriptive text shown in the dropdown menu (e.g. "148 — 5 overnights every 2 weeks, 50/50 summers & holidays")
-- **`selectedLabel`** — compact text shown on the main screen once a selection is made (e.g. "148 overnights")
+- **`selectedLabel`** — compact text shown on the main screen once a selection is made (e.g. "148 overnights", "182.5 overnights (50/50)")
 
 ### Thomas Calculator Model
 
@@ -279,7 +279,7 @@ protocol LowIncomeTableProviding {
   - Tab button labels shortened: "CS Ballpark", "CS Estimator", "Visualizer", "Equalizer"
   - MP tab full name corrected to "Marital Property Equalizer"
   - "Beta" badge/messaging renamed to "Preview" throughout
-  - 50/50 overnight value corrected from 182.5 → 182 (matches Georgia state online calculator)
+  - 50/50 overnight value: 182.5
   - `OvernightOption` gains `selectedLabel` property — dropdown shows full descriptive text; selected state shows compact label (e.g. "148 overnights")
   - Result panel note shortened to "NOTE: ballpark estimate."
   - Info row shortened to "Use CS Estimator for SET, low income, customized parenting time, etc."
