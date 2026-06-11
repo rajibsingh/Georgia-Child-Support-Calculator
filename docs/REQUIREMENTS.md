@@ -11,16 +11,16 @@ Build an iOS app branded for Andrea Knight | Intown Mediation LLC that gives Geo
 
 ## App Structure
 
-The app uses a tab bar with 6 icon-only tabs (no text labels):
+The app uses a tab bar with 6 tabs. Tab labels are shown on iPhone; icon-only on iPad sidebar. Button labels are short for space efficiency:
 
-| # | Tab Name | Icon | Status |
-|---|----------|------|--------|
-| 1 | Child Support Ballparker | `baseball.circle.fill` | Built |
-| 2 | Detailed CS Estimate | `list.bullet.circle.fill` | Coming soon |
-| 3 | Parenting Time Visualizer | `calendar.circle` | Coming soon |
-| 4 | MP Equalizer | `equal.circle.fill` | Coming soon |
-| 5 | Thomas Calculator | `divide.circle.fill` | Built |
-| 6 | Pension Calculator | `function` | Coming soon |
+| # | Full Tab Name | Tab Button Label | Icon | Status |
+|---|---------------|-----------------|------|--------|
+| 1 | CS Ballpark | CS Ballpark | `baseball.circle.fill` | Built |
+| 2 | Detailed CS Estimator | CS Estimator | `list.bullet.circle.fill` | Coming soon |
+| 3 | Parenting Time Visualizer | Visualizer | `calendar.circle` | Coming soon |
+| 4 | Marital Property Equalizer | Equalizer | `equal.circle.fill` | Coming soon |
+| 5 | Thomas Calculator | Thomas Calculator | `divide.circle.fill` | Built |
+| 6 | Pension Calculator | Pension Calculator | `function` | Coming soon |
 
 ## Welcome Screen
 
@@ -47,10 +47,10 @@ Each tab uses its own name as the header top line with a subheading below in sma
 
 | Tab | Header | Subheading |
 |-----|--------|------------|
-| 1 | Child Support Ballparker | Back-of-envelope child support estimator for experienced attorneys. Use Detailed CS Estimator for more nuance including self employment, low income and customized parenting time. |
-| 2 | Detailed CS Estimate | *(none until content is built)* |
+| 1 | CS Ballpark | Back-of-envelope child support estimator for experienced attorneys. Use Detailed CS Estimator for more nuance including self employment, low income and customized parenting time. |
+| 2 | Detailed CS Estimator | *(none until content is built)* |
 | 3 | Parenting Time Visualizer | *(none until content is built)* |
-| 4 | MP Equalizer | Calculate payment needed to equalize marital property. |
+| 4 | Marital Property Equalizer | Calculate payment needed to equalize marital property. |
 | 5 | Thomas Calculator | Estimates marital vs. non-marital share of an asset. |
 | 6 | Pension Calculator | *(none until content is built)* |
 
@@ -73,7 +73,9 @@ Always labeled **CP** (Custodial Parent) and **NCP** (Noncustodial Parent). No c
    - 102 — 3 overnights every 2 weeks, 50/50 holidays, 2 summer weeks
    - 121 — 4 overnights every 2 weeks, 50/50 holidays, 3 summer weeks
    - 148 — 5 overnights every 2 weeks, 50/50 summers & holidays
-   - 182.5 — 50/50 parenting time
+   - 182 — 50/50 parenting time *(matches Georgia state online calculator; previously 182.5)*
+
+   The picker shows the full descriptive label in the dropdown menu. Once a selection is made the control displays a compact label (e.g., "148 overnights" or "182 overnights (50/50)") instead of the full text.
 5. **Work-related childcare** — currency text field + "Who pays?" menu (CP/NCP, no default)
 6. **Child health insurance** — currency text field + "Who pays?" menu (CP/NCP, no default)
 
@@ -90,14 +92,16 @@ Show $0 / 0.0% / 0.0% when no income entered.
 
 - Dynamic label: "NCP Pays" or "CP Pays"
 - Final amount rounded to whole dollar only — all intermediate values shown in full decimal precision
-- Note text: "Simplified ballparker. Use Detailed CS Estimator for SET, low income, customized parenting time and other adjustments."
-- Info row below note: "For SET and other adjustments, use the Detailed CS Estimator tab." (teal info icon, footnote text)
+- Note text: "NOTE: ballpark estimate."
+- Info row below note: "Use CS Estimator for SET, low income, customized parenting time, etc." (teal info icon, footnote text)
 - **"More Numbers"** — collapsible disclosure group showing intermediate calculation steps in smaller font:
   - Combined gross income
   - Combined BCSO
   - CP's share BCSO
   - NCP's share BCSO
   - Parenting time adjustment (positive value, shown only when a schedule is selected)
+  - Sch D expenses paid by CP (shown only when CP-paid expenses are non-zero)
+  - Sch D expenses paid by NCP (shown only when NCP-paid expenses are non-zero)
   - Estimated monthly support
 - No Screen 2 button or Screen 2 references
 
@@ -150,7 +154,7 @@ Results panel is always visible and updates live as inputs are entered. No resul
 
 ## Future Modes (Coming Soon)
 
-### Detailed CS Estimate (Tab 2)
+### Detailed CS Estimator (Tab 2)
 
 Full child support calculation including:
 - Manual overnight entry
@@ -160,7 +164,7 @@ Full child support calculation including:
 - Low-income adjustment
 - Other qualified children / theoretical support credit
 
-### MP Equalizer (Tab 4)
+### Marital Property Equalizer (Tab 4)
 
 Calculates payment needed to equalize marital property between spouses.
 

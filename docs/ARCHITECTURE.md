@@ -8,7 +8,7 @@ Working Numbers for Georgia Family Attorneys is a SwiftUI iOS app with a pure Sw
 - **Short app name:** GAWorking
 - **Bundle display name:** GAWorking
 
-The app launches into a welcome screen (3-second auto-dismiss), then a tab-bar root (`RootTabView`) with six icon-only tabs.
+The app launches into a welcome screen (3.5-second auto-dismiss), then a tab-bar root (`RootTabView`) with six tabs. Tab labels are shown on iPhone; icon-only in the iPad sidebar.
 
 ## Source Layout
 
@@ -60,7 +60,7 @@ The Xcode project uses `PBXFileSystemSynchronizedRootGroup` — new `.swift` fil
 ```
 App launch
   → WelcomeView (3.5 seconds or tap to dismiss, IntownColors.teal background, white text, fade in/out)
-  → RootTabView (6 icon-only tabs)
+  → RootTabView (6 tabs)
 ```
 
 ## Domain Model
@@ -106,13 +106,18 @@ struct BallparkDraft {
 }
 
 enum OvernightOption: CaseIterable {
-    case none       // "Pick an option" — no adjustment applied
+    case none         // "Pick an option" — no adjustment applied
     case schedule102  // 102 overnights
     case schedule121  // 121 overnights
     case schedule148  // 148 overnights
-    case split182     // 182.5 overnights
+    case split182     // 182 overnights (50/50) — matches Georgia state online calculator
 }
 ```
+
+`OvernightOption` has two display properties:
+
+- **`label`** — full descriptive text shown in the dropdown menu (e.g. "148 — 5 overnights every 2 weeks, 50/50 summers & holidays")
+- **`selectedLabel`** — compact text shown on the main screen once a selection is made (e.g. "148 overnights")
 
 ### Thomas Calculator Model
 
@@ -183,21 +188,39 @@ Verified: $10,000 NCP / $6,000 CP / 148 NCP overnights / 2 children → NCP BCSO
 
 ### Tab Bar Root (`RootTabView`)
 
-6 tabs, icons only, no labels:
-1. `baseball.circle.fill` → `BallparkChildSupportView`
-2. `list.bullet.circle.fill` → `ComingSoonView("Detailed CS Estimate")`
-3. `calendar.circle` → `ComingSoonView("Parenting Time Visualizer")`
-4. `equal.circle.fill` → `ComingSoonView("MP Equalizer")`
-5. `divide.circle.fill` → `ThomasCalculatorView`
-6. `function` → `ComingSoonView("Pension Calculator")`
+6 tabs. Labels are displayed on iPhone; iPad shows the sidebar icon-only view. Tab button labels are short to fit the tab bar:
+
+| # | Button Label | Icon | Content |
+|---|-------------|------|---------|
+| 1 | CS Ballpark | `baseball.circle.fill` | `BallparkChildSupportView` |
+| 2 | CS Estimator | `list.bullet.circle.fill` | `ComingSoonView("Detailed CS Estimator")` |
+| 3 | Visualizer | `calendar.circle` | `ComingSoonView("Parenting Time Visualizer")` |
+| 4 | Equalizer | `equal.circle.fill` | `ComingSoonView("Marital Property Equalizer", subtitle: "Calculate payment needed to equalize marital property.")` |
+| 5 | Thomas Calculator | `divide.circle.fill` | `ThomasCalculatorView` |
+| 6 | Pension Calculator | `function` | `ComingSoonView("Pension Calculator")` |
 
 ### Ballpark Child Support (`BallparkChildSupportView`)
 
 - Owns `BallparkDraft` as `@State`
 - `result` is `Result<CalculationResult, Error>?` — nil when `hasAnyIncome` is false
-- No sheet / Screen 2 — references Detailed CS Estimate instead
-- "More Numbers" disclosure group wraps the calculation trace
+- No sheet / Screen 2 — references Detailed CS Estimator instead
 - Keyboard dismissed via toolbar "Done" button and tap gesture on scroll view
+
+**Result panel copy:**
+- Note text: "NOTE: ballpark estimate."
+- Info row: "Use CS Estimator for SET, low income, customized parenting time, etc."
+
+**"More Numbers"** disclosure group (intermediate calculation steps):
+1. Combined gross income
+2. Combined BCSO
+3. CP's share BCSO
+4. NCP's share BCSO
+5. Parenting time adjustment — shown only when a schedule is selected
+6. Sch D expenses paid by CP — shown only when `scheduleDExpenses.custodial.cents != 0`
+7. Sch D expenses paid by NCP — shown only when `scheduleDExpenses.noncustodial.cents != 0`
+8. Estimated monthly support
+
+`CalculationResult.scheduleDExpenses: ParentPair<Money>` holds the raw Sch D expenses (childcare + health insurance) paid by each parent before pro-rata allocation. These values power rows 6 and 7 above.
 
 ### Thomas Calculator (`ThomasCalculatorView`)
 
@@ -252,10 +275,20 @@ protocol LowIncomeTableProviding {
 - Bug fix: parenting time adjustment formula (negate delta to get post-adjustment NCP obligation; verified $10k/$6k/148 overnights → $880)
 - Bug fix: early rounding eliminated — intermediate values carry full precision
 - iPad support: content width cap (640 pt, via `.contentWidth()` modifier), `.automatic` tab style (sidebar on iPad), welcome screen width-capped
+- **June 10 changes:**
+  - Tab button labels shortened: "CS Ballpark", "CS Estimator", "Visualizer", "Equalizer"
+  - MP tab full name corrected to "Marital Property Equalizer"
+  - "Beta" badge/messaging renamed to "Preview" throughout
+  - 50/50 overnight value corrected from 182.5 → 182 (matches Georgia state online calculator)
+  - `OvernightOption` gains `selectedLabel` property — dropdown shows full descriptive text; selected state shows compact label (e.g. "148 overnights")
+  - Result panel note shortened to "NOTE: ballpark estimate."
+  - Info row shortened to "Use CS Estimator for SET, low income, customized parenting time, etc."
+  - `CalculationResult.scheduleDExpenses: ParentPair<Money>` added — raw Sch D expenses paid by each parent
+  - "More Numbers" gains two conditional rows: "Sch D expenses paid by CP" and "Sch D expenses paid by NCP"
 
 ### Future
-- Detailed CS Estimate
-- MP Equalizer
+- Detailed CS Estimator
+- Marital Property Equalizer
 - Parenting Time Visualizer
 - Pension Calculator
 - **iPad two-column layout** — when `horizontalSizeClass == .regular` (iPad), show inputs panel on the left and results panel on the right side by side within each built tab. Requires `@Environment(\.horizontalSizeClass)` checks and restructuring the scroll/VStack hierarchy in `BallparkChildSupportView` and `ThomasCalculatorView`.
